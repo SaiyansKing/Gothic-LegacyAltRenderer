@@ -358,7 +358,7 @@ void IssueDrawingBackBuffer()
 		{
 			float constants[4] = { 1.f - (g_DeviceGamma + 0.5f) + 1.f, g_DeviceBrightness + 0.5f, 1.f - (g_DeviceContrast + 0.5f) + 1.f, 1.f };
 			IDirect3DDevice9_SetPixelShader(g_Direct3D9Device9, g_GammaCorrectionPS);
-			IDirect3DDevice9_SetPixelShaderConstantF(g_Direct3D9Device9, 0, constants, 4);
+			IDirect3DDevice9_SetPixelShaderConstantF(g_Direct3D9Device9, 0, constants, 1);
 		}
 		IDirect3DDevice9_DrawPrimitiveUP(g_Direct3D9Device9, D3DPT_TRIANGLEFAN, 2, vertices, Direct3DCurrentStride);
 		IDirect3DDevice9_SetPixelShader(g_Direct3D9Device9, nullptr);
