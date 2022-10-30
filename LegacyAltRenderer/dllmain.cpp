@@ -412,6 +412,64 @@ int __fastcall HookReadVidDevice_G2(DWORD zCOptions, DWORD _EDX, DWORD sectorStr
 	return 0;
 }
 
+void __fastcall zCSkyControler_Outdoor_Interpolate_G1(DWORD zCSkyControler_Outdoor)
+{
+	float lastMasterTime = *reinterpret_cast<float*>(zCSkyControler_Outdoor + 0x6C);
+	*reinterpret_cast<float*>(zCSkyControler_Outdoor + 0x6C) = 1.0f;
+	reinterpret_cast<void(__thiscall*)(DWORD)>(0x5BE4F0)(zCSkyControler_Outdoor);
+	*reinterpret_cast<float*>(zCSkyControler_Outdoor + 0x6C) = lastMasterTime;
+}
+
+void __fastcall zCSkyControler_Outdoor_Interpolate_G2(DWORD zCSkyControler_Outdoor)
+{
+	float lastMasterTime = *reinterpret_cast<float*>(zCSkyControler_Outdoor + 0x80);
+	*reinterpret_cast<float*>(zCSkyControler_Outdoor + 0x80) = 1.0f;
+	reinterpret_cast<void(__thiscall*)(DWORD)>(0x5E8C20)(zCSkyControler_Outdoor);
+	*reinterpret_cast<float*>(zCSkyControler_Outdoor + 0x80) = lastMasterTime;
+}
+
+void __fastcall oCItem_RotateInInventory(DWORD oCItem)
+{
+	reinterpret_cast<void(__thiscall*)(DWORD, int)>(0x672560)(oCItem, 1);
+
+	float rotAxis[3] = {0.f, 0.f, 0.f};
+	float* bbox3d = reinterpret_cast<float*>(oCItem + 0x7C);
+
+	float val = -1.f;
+	int index = 0;
+	for(int i = 0; i < 3; ++i)
+	{
+		float v = (bbox3d[i + 3] - bbox3d[i]);
+		if(v > val)
+		{
+			val = v;
+			index = i;
+		}
+	}
+	rotAxis[index] = 1.f;
+
+	reinterpret_cast<void(__thiscall*)(DWORD, float*, float)>(0x5EE100)(oCItem, rotAxis, 20.f * (*reinterpret_cast<float*>(0x8CF1F0) / 1000.f));
+}
+
+struct zTRndSimpleVertex
+{
+	float pos[2];
+	float z;
+	float uv[2];
+	DWORD color;
+};
+
+void __fastcall zCRenderer_DrawPolySimple(DWORD zCRenderer, DWORD _EDX, DWORD texture, zTRndSimpleVertex* vertices, int numVertices)
+{
+	for(int i = 0; i < numVertices; ++i)
+	{
+		zTRndSimpleVertex& vert = vertices[i];
+		vert.pos[0] -= 0.5f;
+		vert.pos[1] -= 0.5f;
+	}
+	reinterpret_cast<void(__thiscall*)(DWORD, DWORD, zTRndSimpleVertex*, int)>(*reinterpret_cast<DWORD*>(*reinterpret_cast<DWORD*>(zCRenderer) + 0x24))(zCRenderer, texture, vertices, numVertices);
+}
+
 __declspec(noinline) bool UTILS_IsWindowsVersionOrGreater(WORD wMajorVersion, WORD wMinorVersion, WORD wServicePackMajor)
 {
 	OSVERSIONINFOEXW VersionInfo = {0};
@@ -527,45 +585,6 @@ void InitRenderChoosing()
 		DispatchMessage(&msg);
 	}
 	UnregisterClass(L"Legacy Alternative Renderer", wcex.hInstance);
-}
-
-void __fastcall zCSkyControler_Outdoor_Interpolate_G1(DWORD zCSkyControler_Outdoor)
-{
-	float lastMasterTime = *reinterpret_cast<float*>(zCSkyControler_Outdoor + 0x6C);
-	*reinterpret_cast<float*>(zCSkyControler_Outdoor + 0x6C) = 1.0f;
-	reinterpret_cast<void(__thiscall*)(DWORD)>(0x5BE4F0)(zCSkyControler_Outdoor);
-	*reinterpret_cast<float*>(zCSkyControler_Outdoor + 0x6C) = lastMasterTime;
-}
-
-void __fastcall zCSkyControler_Outdoor_Interpolate_G2(DWORD zCSkyControler_Outdoor)
-{
-	float lastMasterTime = *reinterpret_cast<float*>(zCSkyControler_Outdoor + 0x80);
-	*reinterpret_cast<float*>(zCSkyControler_Outdoor + 0x80) = 1.0f;
-	reinterpret_cast<void(__thiscall*)(DWORD)>(0x5E8C20)(zCSkyControler_Outdoor);
-	*reinterpret_cast<float*>(zCSkyControler_Outdoor + 0x80) = lastMasterTime;
-}
-
-void __fastcall oCItem_RotateInInventory(DWORD oCItem)
-{
-	reinterpret_cast<void(__thiscall*)(DWORD, int)>(0x672560)(oCItem, 1);
-
-	float rotAxis[3] = {0.f, 0.f, 0.f};
-	float* bbox3d = reinterpret_cast<float*>(oCItem + 0x7C);
-
-	float val = -1.f;
-	int index = 0;
-	for(int i = 0; i < 3; ++i)
-	{
-		float v = (bbox3d[i + 3] - bbox3d[i]);
-		if(v > val)
-		{
-			val = v;
-			index = i;
-		}
-	}
-	rotAxis[index] = 1.f;
-
-	reinterpret_cast<void(__thiscall*)(DWORD, float*, float)>(0x5EE100)(oCItem, rotAxis, 20.f * (*reinterpret_cast<float*>(0x8CF1F0) / 1000.f));
 }
 
 DWORD __fastcall InitCommonControls_G1(DWORD zString, DWORD _EDX, DWORD argument)
@@ -793,6 +812,12 @@ BOOL WINAPI DllMain(HINSTANCE hInst, DWORD reason, LPVOID)
         {
             IsG1 = true;
 
+			// Fix rendering ui half-pixel offset
+			OverWriteByte(0x5AF31A, 0x56);
+			OverWriteWord(0x5AF0DC, 0xCB8B);
+			HookCall(0x5AF31B, reinterpret_cast<DWORD>(&zCRenderer_DrawPolySimple));
+			HookCall(0x5AF0E6, reinterpret_cast<DWORD>(&zCRenderer_DrawPolySimple));
+
 			// Optimize qsort's
 			HookCall(0x5B1DA0, reinterpret_cast<DWORD>(&HookSortMaterialPolys_G1));
 
@@ -822,6 +847,12 @@ BOOL WINAPI DllMain(HINSTANCE hInst, DWORD reason, LPVOID)
         else if(*reinterpret_cast<DWORD*>(baseAddr + 0x168) == 0x3D4318 && *reinterpret_cast<DWORD*>(baseAddr + 0x3D43A0) == 0x82E108 && *reinterpret_cast<DWORD*>(baseAddr + 0x3D43CB) == 0x82E10C)
         {
             IsG2 = true;
+
+			// Fix rendering ui half-pixel offset
+			OverWriteByte(0x5D45CA, 0x56);
+			OverWriteWord(0x5D438C, 0xCB8B);
+			HookCall(0x5D45CB, reinterpret_cast<DWORD>(&zCRenderer_DrawPolySimple));
+			HookCall(0x5D4396, reinterpret_cast<DWORD>(&zCRenderer_DrawPolySimple));
 
 			// Optimize qsort's
 			HookCall(0x5D7BE3, reinterpret_cast<DWORD>(&HookSortMaterialPolys_G2));
