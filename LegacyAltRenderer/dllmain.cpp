@@ -459,6 +459,34 @@ struct zTRndSimpleVertex
 	DWORD color;
 };
 
+void __fastcall zCRenderer_DrawPolySimple_Fix_G1(DWORD zCRenderer, DWORD _EDX, DWORD texture, zTRndSimpleVertex* vertices, int numVertices)
+{
+	int texWrap = reinterpret_cast<int(__thiscall*)(DWORD)>(*reinterpret_cast<DWORD*>(*reinterpret_cast<DWORD*>(zCRenderer) + 0x4C))(zCRenderer);
+	reinterpret_cast<void(__thiscall*)(DWORD, int)>(*reinterpret_cast<DWORD*>(*reinterpret_cast<DWORD*>(zCRenderer) + 0x48))(zCRenderer, 0);
+	for(int i = 0; i < numVertices; ++i)
+	{
+		zTRndSimpleVertex& vert = vertices[i];
+		vert.pos[0] -= 0.5f;
+		vert.pos[1] -= 0.5f;
+	}
+	reinterpret_cast<void(__thiscall*)(DWORD, DWORD, zTRndSimpleVertex*, int)>(*reinterpret_cast<DWORD*>(*reinterpret_cast<DWORD*>(zCRenderer) + 0x24))(zCRenderer, texture, vertices, numVertices);
+	reinterpret_cast<void(__thiscall*)(DWORD, int)>(*reinterpret_cast<DWORD*>(*reinterpret_cast<DWORD*>(zCRenderer) + 0x48))(zCRenderer, texWrap);
+}
+
+void __fastcall zCRenderer_DrawPolySimple_Fix_G2(DWORD zCRenderer, DWORD _EDX, DWORD texture, zTRndSimpleVertex* vertices, int numVertices)
+{
+	int texWrap = reinterpret_cast<int(__thiscall*)(DWORD)>(*reinterpret_cast<DWORD*>(*reinterpret_cast<DWORD*>(zCRenderer) + 0x64))(zCRenderer);
+	reinterpret_cast<void(__thiscall*)(DWORD, int)>(*reinterpret_cast<DWORD*>(*reinterpret_cast<DWORD*>(zCRenderer) + 0x60))(zCRenderer, 0);
+	for(int i = 0; i < numVertices; ++i)
+	{
+		zTRndSimpleVertex& vert = vertices[i];
+		vert.pos[0] -= 0.5f;
+		vert.pos[1] -= 0.5f;
+	}
+	reinterpret_cast<void(__thiscall*)(DWORD, DWORD, zTRndSimpleVertex*, int)>(*reinterpret_cast<DWORD*>(*reinterpret_cast<DWORD*>(zCRenderer) + 0x24))(zCRenderer, texture, vertices, numVertices);
+	reinterpret_cast<void(__thiscall*)(DWORD, int)>(*reinterpret_cast<DWORD*>(*reinterpret_cast<DWORD*>(zCRenderer) + 0x60))(zCRenderer, texWrap);
+}
+
 void __fastcall zCRenderer_DrawPolySimple(DWORD zCRenderer, DWORD _EDX, DWORD texture, zTRndSimpleVertex* vertices, int numVertices)
 {
 	for(int i = 0; i < numVertices; ++i)
@@ -594,6 +622,7 @@ DWORD __fastcall InitCommonControls_G1(DWORD zString, DWORD _EDX, DWORD argument
 	std::thread th(InitRenderChoosing);
 	th.join();
 	//selected_option.store(9);
+	//selected_rdepth.store(false);
 
 	int option = selected_option.load();
 	if(option != 7)
@@ -673,6 +702,7 @@ void WINAPI InitCommonControls_G2(void)
 	std::thread th(InitRenderChoosing);
 	th.join();
 	//selected_option.store(9);
+	//selected_rdepth.store(true);
 
 	int option = selected_option.load();
 	if(option != 7)
@@ -815,7 +845,7 @@ BOOL WINAPI DllMain(HINSTANCE hInst, DWORD reason, LPVOID)
 			// Fix rendering ui half-pixel offset
 			OverWriteByte(0x5AF31A, 0x56);
 			OverWriteWord(0x5AF0DC, 0xCB8B);
-			HookCall(0x5AF31B, reinterpret_cast<DWORD>(&zCRenderer_DrawPolySimple));
+			HookCall(0x5AF31B, reinterpret_cast<DWORD>(&zCRenderer_DrawPolySimple_Fix_G1));
 			HookCall(0x5AF0E6, reinterpret_cast<DWORD>(&zCRenderer_DrawPolySimple));
 
 			// Optimize qsort's
@@ -851,7 +881,7 @@ BOOL WINAPI DllMain(HINSTANCE hInst, DWORD reason, LPVOID)
 			// Fix rendering ui half-pixel offset
 			OverWriteByte(0x5D45CA, 0x56);
 			OverWriteWord(0x5D438C, 0xCB8B);
-			HookCall(0x5D45CB, reinterpret_cast<DWORD>(&zCRenderer_DrawPolySimple));
+			HookCall(0x5D45CB, reinterpret_cast<DWORD>(&zCRenderer_DrawPolySimple_Fix_G2));
 			HookCall(0x5D4396, reinterpret_cast<DWORD>(&zCRenderer_DrawPolySimple));
 
 			// Optimize qsort's
