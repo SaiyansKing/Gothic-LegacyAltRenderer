@@ -37,6 +37,9 @@ bool g_CreateStaticVertexBuffer = false;
 bool g_ReadOnlyLightmapData = false;
 bool g_HaveGammeCorrection = true;
 
+D3DMULTISAMPLE_TYPE g_MultiSampleAntiAliasing = D3DMULTISAMPLE_NONE;
+bool g_UseVsync = false;
+
 float g_DeviceGamma = 0.5f;
 float g_DeviceContrast = 0.5f;
 float g_DeviceBrightness = 0.5f;
@@ -1080,13 +1083,27 @@ void ResetDevice()
 	matrix._31 = 0.0f; matrix._32 = 0.0f; matrix._33 = 1.0f; matrix._34 = 1.0f;
 	matrix._41 = 0.0f; matrix._42 = 0.0f; matrix._43 = -1.0f; matrix._44 = 0.0f;
 	IDirect3DDevice9_SetTransform(g_Direct3D9Device9, D3DTS_PROJECTION, &matrix);
-
-	result = IDirect3DDevice9_CreateTexture(g_Direct3D9Device9, g_Direct3D9_PParams.BackBufferWidth, g_Direct3D9_PParams.BackBufferHeight, 1,
-		D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &g_ManagedBackBuffer, NULL);
-	if(SUCCEEDED(result))
+	if(g_MultiSampleAntiAliasing == D3DMULTISAMPLE_NONE)
 	{
-		IDirect3DTexture9_GetSurfaceLevel(g_ManagedBackBuffer, 0, &g_ManagedBoundTarget);
-		IDirect3DDevice9_SetRenderTarget(g_Direct3D9Device9, 0, g_ManagedBoundTarget);
+		result = IDirect3DDevice9_CreateTexture(g_Direct3D9Device9, g_Direct3D9_PParams.BackBufferWidth, g_Direct3D9_PParams.BackBufferHeight, 1,
+			D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &g_ManagedBackBuffer, NULL);
+		if(SUCCEEDED(result))
+		{
+			IDirect3DTexture9_GetSurfaceLevel(g_ManagedBackBuffer, 0, &g_ManagedBoundTarget);
+			IDirect3DDevice9_SetRenderTarget(g_Direct3D9Device9, 0, g_ManagedBoundTarget);
+		}
+	}
+	else
+	{
+		result = IDirect3DDevice9_CreateTexture(g_Direct3D9Device9, g_Direct3D9_PParams.BackBufferWidth, g_Direct3D9_PParams.BackBufferHeight, 1,
+			D3DUSAGE_RENDERTARGET, D3DFMT_X8R8G8B8, D3DPOOL_DEFAULT, &g_ManagedBackBuffer, NULL);
+		if(SUCCEEDED(result))
+		{
+			result = IDirect3DDevice9_CreateRenderTarget(g_Direct3D9Device9, g_Direct3D9_PParams.BackBufferWidth, g_Direct3D9_PParams.BackBufferHeight,
+				D3DFMT_X8R8G8B8, g_MultiSampleAntiAliasing, 0, FALSE, &g_ManagedBoundTarget, NULL);
+			if(SUCCEEDED(result))
+				IDirect3DDevice9_SetRenderTarget(g_Direct3D9Device9, 0, g_ManagedBoundTarget);
+		}
 	}
 }
 
@@ -1530,6 +1547,12 @@ class MyDirect3DDevice7 : public IDirect3DDevice7
 			IDirect3DDevice9_BeginScene(g_Direct3D9Device9);
 			if(g_ManagedBoundTarget)
 				IDirect3DDevice9_SetRenderTarget(g_Direct3D9Device9, 0, g_ManagedBoundTarget);
+
+			if(g_MultiSampleAntiAliasing != D3DMULTISAMPLE_NONE)
+			{
+				IDirect3DDevice9_SetRenderState(g_Direct3D9Device9, D3DRS_MULTISAMPLEANTIALIAS, TRUE);
+				IDirect3DDevice9_SetRenderState(g_Direct3D9Device9, D3DRS_ANTIALIASEDLINEENABLE, TRUE);
+			}
 			return S_OK;
 		}
 		HRESULT STDMETHODCALLTYPE BeginStateBlock() {return S_OK;} // Not Used
@@ -1580,7 +1603,19 @@ class MyDirect3DDevice7 : public IDirect3DDevice7
 			if(g_ManagedBoundTarget)
 			{
 				IDirect3DDevice9_SetRenderTarget(g_Direct3D9Device9, 0, g_DefaultRenderTarget);
-				IssueDrawingBackBuffer();
+				if(g_MultiSampleAntiAliasing == D3DMULTISAMPLE_NONE)
+				{
+					IssueDrawingBackBuffer();
+				}
+				else
+				{
+					// Hack MSAA render target to texture so that we can apply gamme correction shader
+					IDirect3DSurface9* tempSurface = nullptr;
+					IDirect3DTexture9_GetSurfaceLevel(g_ManagedBackBuffer, 0, &tempSurface);
+					IDirect3DDevice9_StretchRect(g_Direct3D9Device9, g_ManagedBoundTarget, nullptr, tempSurface, nullptr, D3DTEXF_NONE);
+					IssueDrawingBackBuffer();
+					IDirect3DSurface9_Release(tempSurface);
+				}
 			}
 			IDirect3DDevice9_EndScene(g_Direct3D9Device9);
 			HRESULT result = IDirect3DDevice9_TestCooperativeLevel(g_Direct3D9Device9);
@@ -1595,7 +1630,7 @@ class MyDirect3DDevice7 : public IDirect3DDevice7
 				return S_OK;
 			}
 			{
-				if(g_Direct3D9Device9Ex) IDirect3DDevice9Ex_PresentEx(g_Direct3D9Device9Ex, nullptr, nullptr, nullptr, nullptr, D3DPRESENT_FORCEIMMEDIATE);
+				if(g_Direct3D9Device9Ex) IDirect3DDevice9Ex_PresentEx(g_Direct3D9Device9Ex, nullptr, nullptr, nullptr, nullptr, (g_UseVsync ? 0 : D3DPRESENT_FORCEIMMEDIATE));
 				else IDirect3DDevice9_Present(g_Direct3D9Device9, nullptr, nullptr, nullptr, nullptr);
 			}
 			return S_OK;
@@ -2144,8 +2179,40 @@ HRESULT WINAPI HookDirectDrawCreateEx_G1(GUID* lpGuid, LPVOID* lplpDD, REFIID ii
 				g_Direct3D9_PParams.BackBufferFormat = D3DFMT_UNKNOWN;
 				g_Direct3D9_PParams.FullScreen_RefreshRateInHz = 0;
 			}
-			g_Direct3D9_PParams.PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
+			g_Direct3D9_PParams.PresentationInterval = (g_UseVsync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE);
 			g_Direct3D9_PParams.EnableAutoDepthStencil = TRUE;
+
+			std::vector<D3DMULTISAMPLE_TYPE> checkMSAA;
+			switch(g_MultiSampleAntiAliasing)
+			{
+				case D3DMULTISAMPLE_8_SAMPLES: checkMSAA.push_back(D3DMULTISAMPLE_8_SAMPLES);
+				case D3DMULTISAMPLE_4_SAMPLES: checkMSAA.push_back(D3DMULTISAMPLE_4_SAMPLES);
+				case D3DMULTISAMPLE_2_SAMPLES: checkMSAA.push_back(D3DMULTISAMPLE_2_SAMPLES);
+				default: break;
+			}
+
+			if(!checkMSAA.empty())
+			{
+				D3DMULTISAMPLE_TYPE supportedMSAA = D3DMULTISAMPLE_NONE;
+				for(D3DMULTISAMPLE_TYPE& msaa : checkMSAA)
+				{
+					if(SUCCEEDED(IDirect3D9_CheckDeviceMultiSampleType(g_Direct3D9, adapterIndex, D3DDEVTYPE_HAL, D3DFMT_X8R8G8B8, TRUE, msaa, NULL)))
+					{
+						supportedMSAA = msaa;
+						break;
+					}
+				}
+
+				if(supportedMSAA == D3DMULTISAMPLE_NONE)
+					MessageBoxA(nullptr, "This device doesn't support MSAA.\nGame will be launched without MSAA.", "Warning", MB_ICONHAND);
+				else if(g_MultiSampleAntiAliasing != supportedMSAA)
+					MessageBoxA(nullptr, "This device doesn't support requested MSAA.\nGame will be launched in different MSAA.", "Warning", MB_ICONHAND);
+
+				g_MultiSampleAntiAliasing = supportedMSAA;
+			}
+
+			g_Direct3D9_PParams.MultiSampleType = g_MultiSampleAntiAliasing;
+			g_Direct3D9_PParams.MultiSampleQuality = 0;
 
 			D3DCAPS9 caps;
 			IDirect3D9_GetDeviceCaps(g_Direct3D9, adapterIndex, D3DDEVTYPE_HAL, &caps);
@@ -2194,10 +2261,21 @@ HRESULT WINAPI HookDirectDrawCreateEx_G1(GUID* lpGuid, LPVOID* lplpDD, REFIID ii
 				GPUDeviceName = _strdup(identifier.Description);
 
 			IDirect3DDevice9_GetRenderTarget(g_Direct3D9Device9, 0, &g_DefaultRenderTarget);
-			result = IDirect3DDevice9_CreateTexture(g_Direct3D9Device9, g_Direct3D9_PParams.BackBufferWidth, g_Direct3D9_PParams.BackBufferHeight, 1,
-				D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &g_ManagedBackBuffer, NULL);
-			if(SUCCEEDED(result))
-				IDirect3DTexture9_GetSurfaceLevel(g_ManagedBackBuffer, 0, &g_ManagedBoundTarget);
+			if(g_MultiSampleAntiAliasing == D3DMULTISAMPLE_NONE)
+			{
+				result = IDirect3DDevice9_CreateTexture(g_Direct3D9Device9, g_Direct3D9_PParams.BackBufferWidth, g_Direct3D9_PParams.BackBufferHeight, 1,
+					D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &g_ManagedBackBuffer, NULL);
+				if(SUCCEEDED(result))
+					IDirect3DTexture9_GetSurfaceLevel(g_ManagedBackBuffer, 0, &g_ManagedBoundTarget);
+			}
+			else
+			{
+				result = IDirect3DDevice9_CreateTexture(g_Direct3D9Device9, g_Direct3D9_PParams.BackBufferWidth, g_Direct3D9_PParams.BackBufferHeight, 1,
+					D3DUSAGE_RENDERTARGET, D3DFMT_X8R8G8B8, D3DPOOL_DEFAULT, &g_ManagedBackBuffer, NULL);
+				if(SUCCEEDED(result))
+					IDirect3DDevice9_CreateRenderTarget(g_Direct3D9Device9, g_Direct3D9_PParams.BackBufferWidth, g_Direct3D9_PParams.BackBufferHeight,
+						D3DFMT_X8R8G8B8, g_MultiSampleAntiAliasing, 0, FALSE, &g_ManagedBoundTarget, NULL);
+			}
 
 			result = IDirect3DDevice9_CreatePixelShader(g_Direct3D9Device9, D3D9_GammaCorrection, &g_GammaCorrectionPS);
 			if(FAILED(result))
@@ -2408,8 +2486,40 @@ HRESULT WINAPI HookDirectDrawCreateEx_G2(GUID* lpGuid, LPVOID* lplpDD, REFIID ii
 				g_Direct3D9_PParams.BackBufferFormat = D3DFMT_UNKNOWN;
 				g_Direct3D9_PParams.FullScreen_RefreshRateInHz = 0;
 			}
-			g_Direct3D9_PParams.PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
+			g_Direct3D9_PParams.PresentationInterval = (g_UseVsync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE);
 			g_Direct3D9_PParams.EnableAutoDepthStencil = TRUE;
+
+			std::vector<D3DMULTISAMPLE_TYPE> checkMSAA;
+			switch(g_MultiSampleAntiAliasing)
+			{
+				case D3DMULTISAMPLE_8_SAMPLES: checkMSAA.push_back(D3DMULTISAMPLE_8_SAMPLES);
+				case D3DMULTISAMPLE_4_SAMPLES: checkMSAA.push_back(D3DMULTISAMPLE_4_SAMPLES);
+				case D3DMULTISAMPLE_2_SAMPLES: checkMSAA.push_back(D3DMULTISAMPLE_2_SAMPLES);
+				default: break;
+			}
+
+			if(!checkMSAA.empty())
+			{
+				D3DMULTISAMPLE_TYPE supportedMSAA = D3DMULTISAMPLE_NONE;
+				for(D3DMULTISAMPLE_TYPE& msaa : checkMSAA)
+				{
+					if(SUCCEEDED(IDirect3D9_CheckDeviceMultiSampleType(g_Direct3D9, adapterIndex, D3DDEVTYPE_HAL, D3DFMT_X8R8G8B8, TRUE, msaa, NULL)))
+					{
+						supportedMSAA = msaa;
+						break;
+					}
+				}
+
+				if(supportedMSAA == D3DMULTISAMPLE_NONE)
+					MessageBoxA(nullptr, "This device doesn't support MSAA.\nGame will be launched without MSAA.", "Warning", MB_ICONHAND);
+				else if(g_MultiSampleAntiAliasing != supportedMSAA)
+					MessageBoxA(nullptr, "This device doesn't support requested MSAA.\nGame will be launched in different MSAA.", "Warning", MB_ICONHAND);
+
+				g_MultiSampleAntiAliasing = supportedMSAA;
+			}
+
+			g_Direct3D9_PParams.MultiSampleType = g_MultiSampleAntiAliasing;
+			g_Direct3D9_PParams.MultiSampleQuality = 0;
 
 			D3DCAPS9 caps;
 			IDirect3D9_GetDeviceCaps(g_Direct3D9, adapterIndex, D3DDEVTYPE_HAL, &caps);
@@ -2458,10 +2568,21 @@ HRESULT WINAPI HookDirectDrawCreateEx_G2(GUID* lpGuid, LPVOID* lplpDD, REFIID ii
 				GPUDeviceName = _strdup(identifier.Description);
 
 			IDirect3DDevice9_GetRenderTarget(g_Direct3D9Device9, 0, &g_DefaultRenderTarget);
-			result = IDirect3DDevice9_CreateTexture(g_Direct3D9Device9, g_Direct3D9_PParams.BackBufferWidth, g_Direct3D9_PParams.BackBufferHeight, 1,
-				D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &g_ManagedBackBuffer, NULL);
-			if(SUCCEEDED(result))
-				IDirect3DTexture9_GetSurfaceLevel(g_ManagedBackBuffer, 0, &g_ManagedBoundTarget);
+			if(g_MultiSampleAntiAliasing == D3DMULTISAMPLE_NONE)
+			{
+				result = IDirect3DDevice9_CreateTexture(g_Direct3D9Device9, g_Direct3D9_PParams.BackBufferWidth, g_Direct3D9_PParams.BackBufferHeight, 1,
+					D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &g_ManagedBackBuffer, NULL);
+				if(SUCCEEDED(result))
+					IDirect3DTexture9_GetSurfaceLevel(g_ManagedBackBuffer, 0, &g_ManagedBoundTarget);
+			}
+			else
+			{
+				result = IDirect3DDevice9_CreateTexture(g_Direct3D9Device9, g_Direct3D9_PParams.BackBufferWidth, g_Direct3D9_PParams.BackBufferHeight, 1,
+					D3DUSAGE_RENDERTARGET, D3DFMT_X8R8G8B8, D3DPOOL_DEFAULT, &g_ManagedBackBuffer, NULL);
+				if(SUCCEEDED(result))
+					IDirect3DDevice9_CreateRenderTarget(g_Direct3D9Device9, g_Direct3D9_PParams.BackBufferWidth, g_Direct3D9_PParams.BackBufferHeight,
+						D3DFMT_X8R8G8B8, g_MultiSampleAntiAliasing, 0, FALSE, &g_ManagedBoundTarget, NULL);
+			}
 
 			result = IDirect3DDevice9_CreatePixelShader(g_Direct3D9Device9, D3D9_GammaCorrection, &g_GammaCorrectionPS);
 			if(FAILED(result))
@@ -2772,23 +2893,36 @@ HRESULT STDMETHODCALLTYPE FrontBufferUnlock(DWORD texturePointer, LPRECT lpRect)
 	return S_OK;
 }
 
-void InstallD3D9Renderer_G1(int rendererOption)
+void InstallD3D9Renderer_G1(int rendererOption, int msaa, bool vsync)
 {
 	const char* renderDLL = "d3d9.dll";
 	if(rendererOption == 5)
 		renderDLL = "dxvk.dll";
+	else if(rendererOption == 6)
+		renderDLL = "dxvk2.dll";
 	else if(rendererOption == 3)
 		renderDLL = "d3d9onGL.dll";
 
-    if(HMODULE d3d9Module = LoadLibraryA(renderDLL))
-    {
-        if((rendererOption == 9 && (Direct3DCreate9Ex_Ptr = reinterpret_cast<DWORD>(GetProcAddress(d3d9Module, "Direct3DCreate9Ex"))) != 0)
-			|| (rendererOption == 12 && (Direct3DCreate9_12_Ptr = reinterpret_cast<DWORD>(GetProcAddress(d3d9Module, "Direct3DCreate9On12"))) != 0)
-            || (Direct3DCreate9_Ptr = reinterpret_cast<DWORD>(GetProcAddress(d3d9Module, "Direct3DCreate9"))) != 0)
-        {
-            HookJMPN(0x75B482, reinterpret_cast<DWORD>(&HookDirectDrawCreateEx_G1));
+	if(HMODULE d3d9Module = LoadLibraryA(renderDLL))
+	{
+		if(rendererOption == 12)
+		{
+			if((Direct3DCreate9_12_Ptr = reinterpret_cast<DWORD>(GetProcAddress(d3d9Module, "Direct3DCreate9On12"))) == 0)
+			{
+				MessageBoxA(nullptr, "Failed to load D3D9on12 - most likely your system is out-dated.", "Fatal Error", MB_ICONHAND);
+				exit(-1);
+			}
+		}
+
+		if(rendererOption == 9 && msaa == 0 && (Direct3DCreate9Ex_Ptr = reinterpret_cast<DWORD>(GetProcAddress(d3d9Module, "Direct3DCreate9Ex"))) != 0
+			|| (Direct3DCreate9_Ptr = reinterpret_cast<DWORD>(GetProcAddress(d3d9Module, "Direct3DCreate9"))) != 0)
+		{
+			g_MultiSampleAntiAliasing = static_cast<D3DMULTISAMPLE_TYPE>(msaa);
+			g_UseVsync = vsync;
+
+			HookJMPN(0x75B482, reinterpret_cast<DWORD>(&HookDirectDrawCreateEx_G1));
 			HookJMPN(0x75B488, reinterpret_cast<DWORD>(&HookDirectDrawEnumerateA));
-            HookJMPN(0x772E48, reinterpret_cast<DWORD>(&HookDirectDrawEnumerateExA));
+			HookJMPN(0x772E48, reinterpret_cast<DWORD>(&HookDirectDrawEnumerateExA));
 			HookJMP(0x43C9E0, reinterpret_cast<DWORD>(&HookzBinkPlayerGetPixelFormat));
 			HookCall(0x5A502D, reinterpret_cast<DWORD>(&HookAcquireVertexBuffer_G1));
 			HookCall(0x5D5527, reinterpret_cast<DWORD>(&HookGetLightStatAtPos_G1));
@@ -2806,26 +2940,57 @@ void InstallD3D9Renderer_G1(int rendererOption)
 			HookJMPN(0x71273B, 0x712758);
 			OverWriteByte(0x4F6C0E, 0xEB);
 			Nop(0x72018B, 2);
-        }
-    }
+		}
+	}
+	else
+	{
+		if(rendererOption == 5 || rendererOption == 6)
+		{
+			MessageBoxA(nullptr, "Failed to load DXVK - most likely your system don't support vulkan.", "Fatal Error", MB_ICONHAND);
+			exit(-1);
+		}
+		else if(rendererOption == 3)
+		{
+			MessageBoxA(nullptr, "Failed to load Wine D3D.", "Fatal Error", MB_ICONHAND);
+			exit(-1);
+		}
+		else
+		{
+			MessageBoxA(nullptr, "Failed to load DirectX9 library.", "Fatal Error", MB_ICONHAND);
+			exit(-1);
+		}
+	}
 }
 
-void InstallD3D9Renderer_G2(int rendererOption)
+void InstallD3D9Renderer_G2(int rendererOption, int msaa, bool vsync)
 {
 	const char* renderDLL = "d3d9.dll";
 	if(rendererOption == 5)
 		renderDLL = "dxvk.dll";
+	else if(rendererOption == 6)
+		renderDLL = "dxvk2.dll";
 	else if(rendererOption == 3)
 		renderDLL = "d3d9onGL.dll";
+	
+	if(HMODULE d3d9Module = LoadLibraryA(renderDLL))
+	{
+		if(rendererOption == 12)
+		{
+			if((Direct3DCreate9_12_Ptr = reinterpret_cast<DWORD>(GetProcAddress(d3d9Module, "Direct3DCreate9On12"))) == 0)
+			{
+				MessageBoxA(nullptr, "Failed to load D3D9on12 - most likely your system is out-dated.", "Fatal Error", MB_ICONHAND);
+				exit(-1);
+			}
+		}
 
-    if(HMODULE d3d9Module = LoadLibraryA(renderDLL))
-    {
-        if((rendererOption == 9 && (Direct3DCreate9Ex_Ptr = reinterpret_cast<DWORD>(GetProcAddress(d3d9Module, "Direct3DCreate9Ex"))) != 0)
-			|| (rendererOption == 12 && (Direct3DCreate9_12_Ptr = reinterpret_cast<DWORD>(GetProcAddress(d3d9Module, "Direct3DCreate9On12"))) != 0)
-            || (Direct3DCreate9_Ptr = reinterpret_cast<DWORD>(GetProcAddress(d3d9Module, "Direct3DCreate9"))) != 0)
-        {
-            HookJMPN(0x7B4B94, reinterpret_cast<DWORD>(&HookDirectDrawCreateEx_G2));
-            HookJMPN(0x7B4B9A, reinterpret_cast<DWORD>(&HookDirectDrawEnumerateExA));
+		if(rendererOption == 9 && msaa == 0 && (Direct3DCreate9Ex_Ptr = reinterpret_cast<DWORD>(GetProcAddress(d3d9Module, "Direct3DCreate9Ex"))) != 0
+			|| (Direct3DCreate9_Ptr = reinterpret_cast<DWORD>(GetProcAddress(d3d9Module, "Direct3DCreate9"))) != 0)
+		{
+			g_MultiSampleAntiAliasing = static_cast<D3DMULTISAMPLE_TYPE>(msaa);
+			g_UseVsync = vsync;
+
+			HookJMPN(0x7B4B94, reinterpret_cast<DWORD>(&HookDirectDrawCreateEx_G2));
+			HookJMPN(0x7B4B9A, reinterpret_cast<DWORD>(&HookDirectDrawEnumerateExA));
 			HookJMP(0x440790, reinterpret_cast<DWORD>(&HookzBinkPlayerGetPixelFormat));
 			HookCall(0x5C6E91, reinterpret_cast<DWORD>(&HookAcquireVertexBuffer_G2));
 			HookCall(0x600974, reinterpret_cast<DWORD>(&HookGetLightStatAtPos_G2));
@@ -2845,6 +3010,24 @@ void InstallD3D9Renderer_G2(int rendererOption)
 			Nop(0x658BCB, 2);
 			Nop(0x6562A7, 2);
 			Nop(0x6564CD, 2);
-        }
-    }
+		}
+	}
+	else
+	{
+		if(rendererOption == 5 || rendererOption == 6)
+		{
+			MessageBoxA(nullptr, "Failed to load DXVK - most likely your system don't support vulkan.", "Fatal Error", MB_ICONHAND);
+			exit(-1);
+		}
+		else if(rendererOption == 3)
+		{
+			MessageBoxA(nullptr, "Failed to load Wine D3D.", "Fatal Error", MB_ICONHAND);
+			exit(-1);
+		}
+		else
+		{
+			MessageBoxA(nullptr, "Failed to load DirectX9 library.", "Fatal Error", MB_ICONHAND);
+			exit(-1);
+		}
+	}
 }

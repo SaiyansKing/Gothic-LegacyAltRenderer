@@ -2,6 +2,7 @@
 
 #include <atomic>
 #include <thread>
+#include <string>
 #include <algorithm>
 #include <intrin.h>
 #include <d3d.h>
@@ -39,12 +40,116 @@ struct ddraw_dll
 typedef void(*LPSmoothStretch)(int, int, int, int, int, int, int, void*, int, int, int, int, int, int, int, void*);
 LPSmoothStretch SmoothStretch;
 
+constexpr int option_lighthack = 1000;
+constexpr int option_reversedepth = 1001;
+constexpr int option_vsync = 1002;
+constexpr int option_launch = 1003;
+
 std::atomic<bool> selected_lighthack = false;
 std::atomic<bool> selected_rdepth = true;
+std::atomic<bool> selected_vsync = false;
 std::atomic<int> selected_option = 0;
+std::atomic<int> selected_msaa = 0;
 
 bool IsG1 = false;
 bool IsG2 = false;
+
+static void LoadCFG(HWND hWnd, HWND rendererBox, HWND msaaBox)
+{
+	char executablePath[MAX_PATH];
+	GetModuleFileNameA(GetModuleHandleA(nullptr), executablePath, sizeof(executablePath));
+	PathRemoveFileSpecA(executablePath);
+
+	FILE* f;
+	errno_t err = fopen_s(&f, (std::string(executablePath) + "\\legacyaltrenderer.ini").c_str(), "r");
+	if(err == 0)
+	{
+		char readedLine[1024];
+		while(fgets(readedLine, sizeof(readedLine), f) != nullptr)
+		{
+			size_t len = strlen(readedLine);
+			if(len > 0)
+			{
+				if(readedLine[len - 1] == '\n' || readedLine[len - 1] == '\r')
+					len -= 1;
+				if(len > 0)
+				{
+					if(readedLine[len - 1] == '\n' || readedLine[len - 1] == '\r')
+						len -= 1;
+				}
+			}
+			if(len == 0)
+				continue;
+
+			std::size_t eqpos;
+			std::string rLine = std::string(readedLine, len);
+			std::transform(rLine.begin(), rLine.end(), rLine.begin(), toupper);
+			if((eqpos = rLine.find("=")) != std::string::npos)
+			{
+				std::string lhLine = rLine.substr(0, eqpos);
+				std::string rhLine = rLine.substr(eqpos + 1);
+				lhLine.erase(lhLine.find_last_not_of(' ') + 1);
+				lhLine.erase(0, lhLine.find_first_not_of(' '));
+				rhLine.erase(rhLine.find_last_not_of(' ') + 1);
+				rhLine.erase(0, rhLine.find_first_not_of(' '));
+				if(lhLine == "LIGHTHACK")
+					selected_lighthack.store(rhLine == "TRUE" || rhLine == "1");
+				else if(lhLine == "REVERSEDDEPTHBUFFER")
+					selected_rdepth.store(rhLine == "TRUE" || rhLine == "1");
+				else if(lhLine == "VSYNC")
+					selected_vsync.store(rhLine == "TRUE" || rhLine == "1");
+				else if(lhLine == "MSAA")
+				{
+					try {selected_msaa.store(std::stoi(rhLine));}
+					catch(const std::exception&) {selected_msaa.store(0);}
+				}
+				else if(lhLine == "RENDERER")
+				{
+					try {selected_option.store(std::stoi(rhLine));}
+					catch(const std::exception&) {selected_option.store(0);}
+				}
+			}
+		}
+		fclose(f);
+	}
+
+	CheckDlgButton(hWnd, option_lighthack, (selected_lighthack.load() ? BST_CHECKED : BST_UNCHECKED));
+	CheckDlgButton(hWnd, option_reversedepth, (selected_rdepth.load() ? BST_CHECKED : BST_UNCHECKED));
+	CheckDlgButton(hWnd, option_vsync, (selected_vsync.load() ? BST_CHECKED : BST_UNCHECKED));
+
+	int msaaOption = selected_msaa.load();
+	if(msaaOption == 8) SendMessage(msaaBox, LB_SETCURSEL, 3, 0);
+	else if(msaaOption == 4) SendMessage(msaaBox, LB_SETCURSEL, 2, 0);
+	else if(msaaOption == 2) SendMessage(msaaBox, LB_SETCURSEL, 1, 0);
+	else SendMessage(msaaBox, LB_SETCURSEL, 0, 0);
+
+	int rendererOption = selected_option.load();
+	if(rendererOption == 3) SendMessage(rendererBox, LB_SETCURSEL, 5, 0);
+	else if(rendererOption == 6) SendMessage(rendererBox, LB_SETCURSEL, 4, 0);
+	else if(rendererOption == 5) SendMessage(rendererBox, LB_SETCURSEL, 3, 0);
+	else if(rendererOption == 12) SendMessage(rendererBox, LB_SETCURSEL, 2, 0);
+	else if(rendererOption == 9) SendMessage(rendererBox, LB_SETCURSEL, 1, 0);
+	else SendMessage(rendererBox, LB_SETCURSEL, 0, 0);
+}
+
+static void SaveCFG()
+{
+	char executablePath[MAX_PATH];
+	GetModuleFileNameA(GetModuleHandleA(nullptr), executablePath, sizeof(executablePath));
+	PathRemoveFileSpecA(executablePath);
+
+	FILE* f;
+	errno_t err = fopen_s(&f, (std::string(executablePath) + "\\legacyaltrenderer.ini").c_str(), "w");
+	if(err == 0)
+	{
+		fputs((std::string("LightHack = ") + (selected_lighthack.load() ? "True\n" : "False\n")).c_str(), f);
+		fputs((std::string("ReversedDepthBuffer = ") + (selected_rdepth.load() ? "True\n" : "False\n")).c_str(), f);
+		fputs((std::string("VSync = ") + (selected_vsync.load() ? "True\n" : "False\n")).c_str(), f);
+		fputs((std::string("MSAA = ") + std::to_string(selected_msaa.load()) + "\n").c_str(), f);
+		fputs((std::string("Renderer = ") + std::to_string(selected_option.load()) + "\n").c_str(), f);
+		fclose(f);
+	}
+}
 
 __forceinline __m128i _sym_mm_mullo_epu32(__m128i a, __m128i b)
 {
@@ -328,7 +433,7 @@ __forceinline __m128 __vectorcall VectorTan(__m128 V) noexcept
 void __fastcall zCCamera_CreateProjectionMatrix(DWORD zCCamera, DWORD _EDX, float* matrix, float far_plane, float near_plane, float fov_horiz, float fov_vert)
 {
 	float zRange = far_plane / (far_plane - near_plane);
-	float fov[2] = { fov_horiz, fov_vert };
+	float fov[2] = {fov_horiz, fov_vert};
 	float fovMultiply[2] = {0.5f, 0.5f};
 	float fRange[2] = {zRange, -zRange * near_plane};
 
@@ -528,44 +633,64 @@ __forceinline bool UTILS_IsWindows10OrGreater() {return UTILS_IsWindowsVersionOr
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	static HWND lbox;
+	static HWND lbox, abox;
 	switch(message)
 	{
 		case WM_CREATE:
 		{
-			lbox = CreateWindow(L"LISTBOX", L"", (WS_CHILD|WS_VISIBLE|WS_BORDER), 5, 5, 185, 180, hWnd, 0, 0, 0);
+			lbox = CreateWindow(L"LISTBOX", L"", (WS_CHILD|WS_VISIBLE|WS_BORDER), 5, 5, 185, 100, hWnd, 0, 0, 0);
 			SendMessage(lbox, LB_SETITEMDATA, static_cast<int>(SendMessage(lbox, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"DirectX7"))), 7);
 			SendMessage(lbox, LB_SETITEMDATA, static_cast<int>(SendMessage(lbox, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"DirectX9"))), 9);
-			if(UTILS_IsWindows10OrGreater()) SendMessage(lbox, LB_SETITEMDATA, static_cast<int>(SendMessage(lbox, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"DirectX12"))), 12);
-			SendMessage(lbox, LB_SETITEMDATA, static_cast<int>(SendMessage(lbox, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Vulkan"))), 5);
-			SendMessage(lbox, LB_SETITEMDATA, static_cast<int>(SendMessage(lbox, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"OpenGL"))), 3);
-			CreateWindow(L"button", L"Light hack", (WS_CHILD|WS_VISIBLE|BS_CHECKBOX), 5, 190, 185, 18, hWnd, reinterpret_cast<HMENU>(1002), 0, 0);
-			CreateWindow(L"button", L"Reverse depth buffer", (WS_CHILD|WS_VISIBLE|BS_CHECKBOX), 5, 210, 185, 18, hWnd, reinterpret_cast<HMENU>(1001), 0, 0);
-			CreateWindow(L"button", L"Launch", (WS_CHILD|WS_VISIBLE|WS_BORDER), 5, 235, 185, 30, hWnd, reinterpret_cast<HMENU>(1000), 0, 0);
-			CheckDlgButton(hWnd, 1001, BST_CHECKED);
+			SendMessage(lbox, LB_SETITEMDATA, static_cast<int>(SendMessage(lbox, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"DirectX12"))), 12);
+			SendMessage(lbox, LB_SETITEMDATA, static_cast<int>(SendMessage(lbox, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Vulkan (DXVK 1.10.3)"))), 5);
+			SendMessage(lbox, LB_SETITEMDATA, static_cast<int>(SendMessage(lbox, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Vulkan (DXVK 2.0)"))), 6);
+			SendMessage(lbox, LB_SETITEMDATA, static_cast<int>(SendMessage(lbox, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"OpenGL (WineD3D 7.19)"))), 3);
+
+			abox = CreateWindow(L"LISTBOX", L"", (WS_CHILD|WS_VISIBLE|WS_BORDER), 5, 110, 185, 70, hWnd, 0, 0, 0);
+			SendMessage(abox, LB_SETITEMDATA, static_cast<int>(SendMessage(abox, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"No Anti-Aliasing"))), 0);
+			SendMessage(abox, LB_SETITEMDATA, static_cast<int>(SendMessage(abox, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"2x MSAA"))), 2);
+			SendMessage(abox, LB_SETITEMDATA, static_cast<int>(SendMessage(abox, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"4x MSAA"))), 4);
+			SendMessage(abox, LB_SETITEMDATA, static_cast<int>(SendMessage(abox, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"8x MSAA"))), 8);
+
+			CreateWindow(L"button", L"Light hack", (WS_CHILD|WS_VISIBLE|BS_CHECKBOX), 5, 180, 185, 18, hWnd, reinterpret_cast<HMENU>(option_lighthack), 0, 0);
+			CreateWindow(L"button", L"Reverse depth buffer", (WS_CHILD|WS_VISIBLE|BS_CHECKBOX), 5, 200, 185, 18, hWnd, reinterpret_cast<HMENU>(option_reversedepth), 0, 0);
+			CreateWindow(L"button", L"Vertical Synchronization", (WS_CHILD|WS_VISIBLE|BS_CHECKBOX), 5, 220, 185, 18, hWnd, reinterpret_cast<HMENU>(option_vsync), 0, 0);
+			CreateWindow(L"button", L"Launch", (WS_CHILD|WS_VISIBLE|WS_BORDER), 5, 245, 185, 30, hWnd, reinterpret_cast<HMENU>(option_launch), 0, 0);
+
+			LoadCFG(hWnd, lbox, abox);
 		}
 		break;
 		case WM_COMMAND:
 		{
 			int wmId = LOWORD(wParam);
 			int wmEvent = HIWORD(wParam);
-			if(wmId == 1000)
+			if(wmId == option_launch)
 			{
 				int res = static_cast<int>(SendMessage(lbox, LB_GETITEMDATA, static_cast<int>(SendMessage(lbox, LB_GETCURSEL, 0, 0)), 0));
 				selected_option.store(res);
+				res = static_cast<int>(SendMessage(abox, LB_GETITEMDATA, static_cast<int>(SendMessage(abox, LB_GETCURSEL, 0, 0)), 0));
+				selected_msaa.store(res);
+
+				SaveCFG();
 				PostQuitMessage(0);
 			}
-			else if(wmId == 1001)
+			else if(wmId == option_reversedepth)
 			{
-				CheckDlgButton(hWnd, 1001, (IsDlgButtonChecked(hWnd, 1001) ? BST_UNCHECKED : BST_CHECKED));
-				if(IsDlgButtonChecked(hWnd, 1001)) selected_rdepth.store(true);
+				CheckDlgButton(hWnd, option_reversedepth, (IsDlgButtonChecked(hWnd, option_reversedepth) ? BST_UNCHECKED : BST_CHECKED));
+				if(IsDlgButtonChecked(hWnd, option_reversedepth)) selected_rdepth.store(true);
 				else selected_rdepth.store(false);
 			}
-			else if(wmId == 1002)
+			else if(wmId == option_lighthack)
 			{
-				CheckDlgButton(hWnd, 1002, (IsDlgButtonChecked(hWnd, 1002) ? BST_UNCHECKED : BST_CHECKED));
-				if(IsDlgButtonChecked(hWnd, 1002)) selected_lighthack.store(true);
+				CheckDlgButton(hWnd, option_lighthack, (IsDlgButtonChecked(hWnd, option_lighthack) ? BST_UNCHECKED : BST_CHECKED));
+				if(IsDlgButtonChecked(hWnd, option_lighthack)) selected_lighthack.store(true);
 				else selected_lighthack.store(false);
+			}
+			else if(wmId == option_vsync)
+			{
+				CheckDlgButton(hWnd, option_vsync, (IsDlgButtonChecked(hWnd, option_vsync) ? BST_UNCHECKED : BST_CHECKED));
+				if(IsDlgButtonChecked(hWnd, option_vsync)) selected_vsync.store(true);
+				else selected_vsync.store(false);
 			}
 		}
 		break;
@@ -597,7 +722,7 @@ void InitRenderChoosing()
 	RegisterClassEx(&wcex);
 
 	int width = 200;
-	int height = 300;
+	int height = 310;
 	int xPos = (GetSystemMetrics(SM_CXSCREEN) / 2) - (width / 2);
 	int yPos = (GetSystemMetrics(SM_CYSCREEN) / 2) - (height / 2);
 
@@ -621,14 +746,12 @@ DWORD __fastcall InitCommonControls_G1(DWORD zString, DWORD _EDX, DWORD argument
 
 	std::thread th(InitRenderChoosing);
 	th.join();
-	//selected_option.store(9);
-	//selected_rdepth.store(false);
 
 	int option = selected_option.load();
 	if(option != 7)
 	{
-		void InstallD3D9Renderer_G1(int);
-		InstallD3D9Renderer_G1(option);
+		void InstallD3D9Renderer_G1(int, int, bool);
+		InstallD3D9Renderer_G1(option, selected_msaa.load(), selected_vsync.load());
 	}
 	else
 	{
@@ -701,14 +824,12 @@ void WINAPI InitCommonControls_G2(void)
 
 	std::thread th(InitRenderChoosing);
 	th.join();
-	//selected_option.store(9);
-	//selected_rdepth.store(true);
 
 	int option = selected_option.load();
 	if(option != 7)
 	{
-		void InstallD3D9Renderer_G2(int);
-		InstallD3D9Renderer_G2(option);
+		void InstallD3D9Renderer_G2(int, int, bool);
+		InstallD3D9Renderer_G2(option, selected_msaa.load(), selected_vsync.load());
 	}
 	else
 	{
