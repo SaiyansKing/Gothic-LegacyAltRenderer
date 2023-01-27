@@ -471,8 +471,8 @@ int __fastcall BinkPlayerPlayFrame_G1(DWORD BinkPlayer)
 						dstH = video->height;
 					}
 
-					float minx = static_cast<float>(dstX);
-					float miny = static_cast<float>(dstY);
+					float minx = static_cast<float>(dstX) - 0.5f;
+					float miny = static_cast<float>(dstY) - 0.5f;
 					float maxx = static_cast<float>(dstW) + minx;
 					float maxy = static_cast<float>(dstH) + miny;
 
@@ -481,8 +481,8 @@ int __fastcall BinkPlayerPlayFrame_G1(DWORD BinkPlayer)
 					float minv = 0.f;
 					float maxv = static_cast<float>(video->height) * video->scaleTV;
 
-					vertices[0].sx = 0.f;
-					vertices[0].sy = 0.f;
+					vertices[0].sx = -0.5f;
+					vertices[0].sy = -0.5f;
 					vertices[0].sz = 0.f;
 					vertices[0].rhw = 1.f;
 					vertices[0].color = 0x00000000;
@@ -490,8 +490,8 @@ int __fastcall BinkPlayerPlayFrame_G1(DWORD BinkPlayer)
 					vertices[0].tu = 0.f;
 					vertices[0].tv = 0.f;
 
-					vertices[1].sx = static_cast<float>(gWidth);
-					vertices[1].sy = 0.f;
+					vertices[1].sx = static_cast<float>(gWidth) - 0.5f;
+					vertices[1].sy = -0.5f;
 					vertices[1].sz = 0.f;
 					vertices[1].rhw = 1.f;
 					vertices[1].color = 0x00000000;
@@ -499,8 +499,8 @@ int __fastcall BinkPlayerPlayFrame_G1(DWORD BinkPlayer)
 					vertices[1].tu = 0.f;
 					vertices[1].tv = 0.f;
 
-					vertices[2].sx = static_cast<float>(gWidth);
-					vertices[2].sy = static_cast<float>(gHeight);
+					vertices[2].sx = static_cast<float>(gWidth) - 0.5f;
+					vertices[2].sy = static_cast<float>(gHeight) - 0.5f;
 					vertices[2].sz = 0.f;
 					vertices[2].rhw = 1.f;
 					vertices[2].color = 0x00000000;
@@ -508,8 +508,8 @@ int __fastcall BinkPlayerPlayFrame_G1(DWORD BinkPlayer)
 					vertices[2].tu = 0.f;
 					vertices[2].tv = 0.f;
 
-					vertices[3].sx = 0.f;
-					vertices[3].sy = static_cast<float>(gHeight);
+					vertices[3].sx = -0.5f;
+					vertices[3].sy = static_cast<float>(gHeight) - 0.5f;
 					vertices[3].sz = 0.f;
 					vertices[3].rhw = 1.f;
 					vertices[3].color = 0x00000000;
@@ -747,8 +747,8 @@ int __fastcall BinkPlayerPlayFrame_G2(DWORD BinkPlayer)
 						dstH = video->height;
 					}
 
-					float minx = static_cast<float>(dstX);
-					float miny = static_cast<float>(dstY);
+					float minx = static_cast<float>(dstX) - 0.5f;
+					float miny = static_cast<float>(dstY) - 0.5f;
 					float maxx = static_cast<float>(dstW) + minx;
 					float maxy = static_cast<float>(dstH) + miny;
 
@@ -757,8 +757,8 @@ int __fastcall BinkPlayerPlayFrame_G2(DWORD BinkPlayer)
 					float minv = 0.f;
 					float maxv = static_cast<float>(video->height) * video->scaleTV;
 
-					vertices[0].sx = 0.f;
-					vertices[0].sy = 0.f;
+					vertices[0].sx = -0.5f;
+					vertices[0].sy = -0.5f;
 					vertices[0].sz = 0.f;
 					vertices[0].rhw = 1.f;
 					vertices[0].color = 0x00000000;
@@ -766,8 +766,8 @@ int __fastcall BinkPlayerPlayFrame_G2(DWORD BinkPlayer)
 					vertices[0].tu = 0.f;
 					vertices[0].tv = 0.f;
 
-					vertices[1].sx = static_cast<float>(gWidth);
-					vertices[1].sy = 0.f;
+					vertices[1].sx = static_cast<float>(gWidth) - 0.5f;
+					vertices[1].sy = -0.5f;
 					vertices[1].sz = 0.f;
 					vertices[1].rhw = 1.f;
 					vertices[1].color = 0x00000000;
@@ -775,8 +775,8 @@ int __fastcall BinkPlayerPlayFrame_G2(DWORD BinkPlayer)
 					vertices[1].tu = 0.f;
 					vertices[1].tv = 0.f;
 
-					vertices[2].sx = static_cast<float>(gWidth);
-					vertices[2].sy = static_cast<float>(gHeight);
+					vertices[2].sx = static_cast<float>(gWidth) - 0.5f;
+					vertices[2].sy = static_cast<float>(gHeight) - 0.5f;
 					vertices[2].sz = 0.f;
 					vertices[2].rhw = 1.f;
 					vertices[2].color = 0x00000000;
@@ -784,8 +784,8 @@ int __fastcall BinkPlayerPlayFrame_G2(DWORD BinkPlayer)
 					vertices[2].tu = 0.f;
 					vertices[2].tv = 0.f;
 
-					vertices[3].sx = 0.f;
-					vertices[3].sy = static_cast<float>(gHeight);
+					vertices[3].sx = -0.5f;
+					vertices[3].sy = static_cast<float>(gHeight) - 0.5f;
 					vertices[3].sz = 0.f;
 					vertices[3].rhw = 1.f;
 					vertices[3].color = 0x00000000;
