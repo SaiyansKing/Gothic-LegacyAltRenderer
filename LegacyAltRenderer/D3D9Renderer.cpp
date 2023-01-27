@@ -2784,9 +2784,21 @@ void __fastcall HookSetGammaCorrection_G2(DWORD zCRnd_D3D, DWORD _EDX, float gam
 unsigned char* FrontBufferData = nullptr;
 HRESULT __stdcall FrontBufferLock(LPRECT lpDestRect, LPDDSURFACEDESC2 lpDDSurfaceDesc, DWORD dwFlags, HANDLE hEvent)
 {
+	if(g_ManagedBoundTarget && g_MultiSampleAntiAliasing != D3DMULTISAMPLE_NONE)
+	{
+		// Hack MSAA render target to texture so that we can fetch the pixels from vram
+		IDirect3DSurface9* tempSurface = nullptr;
+		IDirect3DTexture9_GetSurfaceLevel(g_ManagedBackBuffer, 0, &tempSurface);
+		IDirect3DDevice9_StretchRect(g_Direct3D9Device9, g_ManagedBoundTarget, nullptr, tempSurface, nullptr, D3DTEXF_NONE);
+		IDirect3DSurface9_Release(tempSurface);
+	}
+
 	bool FAILURE = false;
 	IDirect3DSurface9* defaultBackBuffer;
-	IDirect3DDevice9_GetRenderTarget(g_Direct3D9Device9, 0, &defaultBackBuffer);
+	if(g_ManagedBackBuffer)
+		IDirect3DTexture9_GetSurfaceLevel(g_ManagedBackBuffer, 0, &defaultBackBuffer);
+	else
+		IDirect3DDevice9_GetRenderTarget(g_Direct3D9Device9, 0, &defaultBackBuffer);
 	{
 		D3DSURFACE_DESC desc;
 		HRESULT result = IDirect3DSurface9_GetDesc(defaultBackBuffer, &desc);
