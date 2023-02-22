@@ -643,8 +643,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			SendMessage(lbox, LB_SETITEMDATA, static_cast<int>(SendMessage(lbox, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"DirectX9"))), 9);
 			SendMessage(lbox, LB_SETITEMDATA, static_cast<int>(SendMessage(lbox, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"DirectX12"))), 12);
 			SendMessage(lbox, LB_SETITEMDATA, static_cast<int>(SendMessage(lbox, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Vulkan (DXVK 1.10.3)"))), 5);
-			SendMessage(lbox, LB_SETITEMDATA, static_cast<int>(SendMessage(lbox, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Vulkan (DXVK 2.0)"))), 6);
-			SendMessage(lbox, LB_SETITEMDATA, static_cast<int>(SendMessage(lbox, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"OpenGL (WineD3D 7.19)"))), 3);
+			SendMessage(lbox, LB_SETITEMDATA, static_cast<int>(SendMessage(lbox, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Vulkan (DXVK 2.1)"))), 6);
+			SendMessage(lbox, LB_SETITEMDATA, static_cast<int>(SendMessage(lbox, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"OpenGL (WineD3D 8.2)"))), 3);
 
 			abox = CreateWindow(L"LISTBOX", L"", (WS_CHILD|WS_VISIBLE|WS_BORDER), 5, 110, 185, 70, hWnd, 0, 0, 0);
 			SendMessage(abox, LB_SETITEMDATA, static_cast<int>(SendMessage(abox, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"No Anti-Aliasing"))), 0);
@@ -798,7 +798,7 @@ DWORD __fastcall InitCommonControls_G1(DWORD zString, DWORD _EDX, DWORD argument
 	}
 	if(selected_lighthack.load())
 		HookCall(0x5C0B93, reinterpret_cast<DWORD>(&zCSkyControler_Outdoor_Interpolate_G1));
-
+	
 	if(*reinterpret_cast<BYTE*>(0x67303D) != 0xD8)
 	{
 		WriteStack(0x67303D, "\xD8\x1D\xA4\x08\x7D\x00");
@@ -972,6 +972,18 @@ BOOL WINAPI DllMain(HINSTANCE hInst, DWORD reason, LPVOID)
 			// Optimize qsort's
 			HookCall(0x5B1DA0, reinterpret_cast<DWORD>(&HookSortMaterialPolys_G1));
 
+			// Disable ccDrawCaption
+			OverWriteByte(0x4F2450, 0xC3);
+
+			// Disable ccRenderCaption
+			OverWriteByte(0x4F25D0, 0xC3);
+
+			// Disable WM_NCPAINT
+			HookJMP(0x4F5202, 0x4F57F4);
+
+			// Disable WM_PAINT
+			HookJMP(0x4F545D, 0x4F57F4);
+
 			// Initialize renderer
 			HookCall(0x4F3E22, reinterpret_cast<DWORD>(&InitCommonControls_G1));
 
@@ -1012,6 +1024,18 @@ BOOL WINAPI DllMain(HINSTANCE hInst, DWORD reason, LPVOID)
 
 			// Initialize renderer
 			HookCallN(0x502D75, reinterpret_cast<DWORD>(&InitCommonControls_G2));
+
+			// Disable ccDrawCaption
+			OverWriteByte(0x500990, 0xC3);
+
+			// Disable ccRenderCaption
+			OverWriteByte(0x500B10, 0xC3);
+
+			// Disable WM_NCPAINT
+			OverWriteByte(0x503FCA, 0xEB);
+
+			// Disable WM_PAINT
+			OverWriteByte(0x50394D, 0xEB);
 
 			// Show correct savegame thumbnail
 			WriteStack(0x437157, "\x8B\xEE\xEB\x21");

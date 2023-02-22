@@ -16,6 +16,9 @@ static D3DPRESENT_PARAMETERS g_Direct3D9_PParams;
 DWORD Direct3DCurrentFVF = static_cast<DWORD>(-1);
 int Direct3DCurrentStride = 0;
 int fullscreenExclusivent = 0;
+int WindowPositionX = 0;
+int WindowPositionY = 0;
+int Direct3DDeviceCreated = 0;
 
 DWORD Direct3DCreate9_12_Ptr = 0;
 DWORD Direct3DCreate9Ex_Ptr = 0;
@@ -2129,6 +2132,11 @@ HRESULT WINAPI HookDirectDrawCreateEx_G1(GUID* lpGuid, LPVOID* lplpDD, REFIID ii
 				int resWidth = reinterpret_cast<int(__thiscall*)(DWORD, DWORD, const char*, UINT)>(0x45CDB0)(options, 0x869248, "zVidResFullscreenX", width);
 				int resHeight = reinterpret_cast<int(__thiscall*)(DWORD, DWORD, const char*, UINT)>(0x45CDB0)(options, 0x869248, "zVidResFullscreenY", height);
 				fullscreenExclusivent = reinterpret_cast<int(__thiscall*)(DWORD, DWORD, const char*, int)>(0x45CDB0)(options, 0x869248, "zStartupWindowed", 1);
+				if(fullscreenExclusivent)
+				{
+					WindowPositionX = *reinterpret_cast<int*>(*reinterpret_cast<DWORD*>(0x4F42DA));
+					WindowPositionY = *reinterpret_cast<int*>(*reinterpret_cast<DWORD*>(0x4F42D3));
+				}
 
 				bool foundMode = false;
 				for(DDSURFACEDESC2& mode : g_Direct3D9VideoModes)
@@ -2253,8 +2261,10 @@ HRESULT WINAPI HookDirectDrawCreateEx_G1(GUID* lpGuid, LPVOID* lplpDD, REFIID ii
 				lExStyle &= ~(WS_EX_DLGMODALFRAME|WS_EX_CLIENTEDGE|WS_EX_STATICEDGE);
 				SetWindowLongA(gothicHWND, GWL_STYLE, lStyle);
 				SetWindowLongA(gothicHWND, GWL_EXSTYLE, (lExStyle|WS_EX_TOPMOST));
-				SetWindowPos(gothicHWND, HWND_TOPMOST, 0, 0, g_Direct3D9_PParams.BackBufferWidth, g_Direct3D9_PParams.BackBufferHeight, (SWP_NOMOVE|SWP_SHOWWINDOW));
+				SetWindowPos(gothicHWND, HWND_TOPMOST, WindowPositionX, WindowPositionY, g_Direct3D9_PParams.BackBufferWidth, g_Direct3D9_PParams.BackBufferHeight, SWP_SHOWWINDOW);
 			}
+			else
+				SetWindowPos(gothicHWND, HWND_BOTTOM, WindowPositionX, WindowPositionY, g_Direct3D9_PParams.BackBufferWidth, g_Direct3D9_PParams.BackBufferHeight, (SWP_NOZORDER|SWP_SHOWWINDOW));
 
 			D3DADAPTER_IDENTIFIER9 identifier;
 			if(SUCCEEDED(IDirect3D9_GetAdapterIdentifier(g_Direct3D9, adapterIndex, 0, &identifier)))
@@ -2281,6 +2291,7 @@ HRESULT WINAPI HookDirectDrawCreateEx_G1(GUID* lpGuid, LPVOID* lplpDD, REFIID ii
 			if(FAILED(result))
 				g_HaveGammeCorrection = false;
 
+			Direct3DDeviceCreated = 1;
 			*lplpDD = new MyDirectDraw();
 			return S_OK;
 		}
@@ -2436,6 +2447,11 @@ HRESULT WINAPI HookDirectDrawCreateEx_G2(GUID* lpGuid, LPVOID* lplpDD, REFIID ii
 				int resWidth = reinterpret_cast<int(__thiscall*)(DWORD, DWORD, const char*, UINT)>(0x462390)(options, 0x8CD474, "zVidResFullscreenX", width);
 				int resHeight = reinterpret_cast<int(__thiscall*)(DWORD, DWORD, const char*, UINT)>(0x462390)(options, 0x8CD474, "zVidResFullscreenY", height);
 				fullscreenExclusivent = reinterpret_cast<int(__thiscall*)(DWORD, DWORD, const char*, int)>(0x462390)(options, 0x8CD474, "zStartupWindowed", 1);
+				if(fullscreenExclusivent)
+				{
+					WindowPositionX = *reinterpret_cast<int*>(*reinterpret_cast<DWORD*>(0x503216));
+					WindowPositionY = *reinterpret_cast<int*>(*reinterpret_cast<DWORD*>(0x50320A));
+				}
 
 				bool foundMode = false;
 				for(DDSURFACEDESC2& mode : g_Direct3D9VideoModes)
@@ -2560,8 +2576,10 @@ HRESULT WINAPI HookDirectDrawCreateEx_G2(GUID* lpGuid, LPVOID* lplpDD, REFIID ii
 				lExStyle &= ~(WS_EX_DLGMODALFRAME|WS_EX_CLIENTEDGE|WS_EX_STATICEDGE);
 				SetWindowLongA(gothicHWND, GWL_STYLE, lStyle);
 				SetWindowLongA(gothicHWND, GWL_EXSTYLE, (lExStyle|WS_EX_TOPMOST));
-				SetWindowPos(gothicHWND, HWND_TOPMOST, 0, 0, g_Direct3D9_PParams.BackBufferWidth, g_Direct3D9_PParams.BackBufferHeight, (SWP_NOMOVE|SWP_SHOWWINDOW));
+				SetWindowPos(gothicHWND, HWND_TOPMOST, WindowPositionX, WindowPositionY, g_Direct3D9_PParams.BackBufferWidth, g_Direct3D9_PParams.BackBufferHeight, SWP_SHOWWINDOW);
 			}
+			else
+				SetWindowPos(gothicHWND, HWND_BOTTOM, WindowPositionX, WindowPositionY, g_Direct3D9_PParams.BackBufferWidth, g_Direct3D9_PParams.BackBufferHeight, (SWP_NOZORDER|SWP_SHOWWINDOW));
 
 			D3DADAPTER_IDENTIFIER9 identifier;
 			if(SUCCEEDED(IDirect3D9_GetAdapterIdentifier(g_Direct3D9, adapterIndex, 0, &identifier)))
@@ -2588,6 +2606,7 @@ HRESULT WINAPI HookDirectDrawCreateEx_G2(GUID* lpGuid, LPVOID* lplpDD, REFIID ii
 			if(FAILED(result))
 				g_HaveGammeCorrection = false;
 			
+			Direct3DDeviceCreated = 1;
 			*lplpDD = new MyDirectDraw();
 			return S_OK;
 		}
@@ -2652,6 +2671,8 @@ float* __fastcall HookGetLightStatAtPos_G2(DWORD zCPolygon, DWORD _EDX, float* r
 void __cdecl HookSetMode_G1(UINT width, UINT height, int bpp, DWORD contextHandle)
 {
 	reinterpret_cast<void(__cdecl*)(UINT, UINT, int, DWORD)>(0x702180)(width, height, bpp, contextHandle);
+	if(!Direct3DDeviceCreated)
+		return;
 
 	g_Direct3D9_PParams.BackBufferWidth = width;
 	g_Direct3D9_PParams.BackBufferHeight = height;
@@ -2672,13 +2693,15 @@ void __cdecl HookSetMode_G1(UINT width, UINT height, int bpp, DWORD contextHandl
 		lExStyle &= ~(WS_EX_DLGMODALFRAME|WS_EX_CLIENTEDGE|WS_EX_STATICEDGE);
 		SetWindowLongA(gothicHWND, GWL_STYLE, lStyle);
 		SetWindowLongA(gothicHWND, GWL_EXSTYLE, (lExStyle|WS_EX_TOPMOST));
-		SetWindowPos(gothicHWND, HWND_TOPMOST, 0, 0, g_Direct3D9_PParams.BackBufferWidth, g_Direct3D9_PParams.BackBufferHeight, (SWP_NOMOVE|SWP_SHOWWINDOW));
+		SetWindowPos(gothicHWND, HWND_TOPMOST, WindowPositionX, WindowPositionY, g_Direct3D9_PParams.BackBufferWidth, g_Direct3D9_PParams.BackBufferHeight, SWP_SHOWWINDOW);
 	}
 }
 
 void __cdecl HookSetMode_G2(UINT width, UINT height, int bpp, DWORD contextHandle)
 {
 	reinterpret_cast<void(__cdecl*)(UINT, UINT, int, DWORD)>(0x7ABDB0)(width, height, bpp, contextHandle);
+	if(!Direct3DDeviceCreated)
+		return;
 
 	g_Direct3D9_PParams.BackBufferWidth = width;
 	g_Direct3D9_PParams.BackBufferHeight = height;
@@ -2699,7 +2722,7 @@ void __cdecl HookSetMode_G2(UINT width, UINT height, int bpp, DWORD contextHandl
 		lExStyle &= ~(WS_EX_DLGMODALFRAME|WS_EX_CLIENTEDGE|WS_EX_STATICEDGE);
 		SetWindowLongA(gothicHWND, GWL_STYLE, lStyle);
 		SetWindowLongA(gothicHWND, GWL_EXSTYLE, (lExStyle|WS_EX_TOPMOST));
-		SetWindowPos(gothicHWND, HWND_TOPMOST, 0, 0, g_Direct3D9_PParams.BackBufferWidth, g_Direct3D9_PParams.BackBufferHeight, (SWP_NOMOVE|SWP_SHOWWINDOW));
+		SetWindowPos(gothicHWND, HWND_TOPMOST, WindowPositionX, WindowPositionY, g_Direct3D9_PParams.BackBufferWidth, g_Direct3D9_PParams.BackBufferHeight, SWP_SHOWWINDOW);
 	}
 }
 
@@ -2710,7 +2733,10 @@ int __fastcall HookReadStartupWindowed(DWORD zCOptions, DWORD _EDX, DWORD sector
 
 void HandleWindowFocus(HWND hwnd, bool inFocus)
 {
-	static int LastFocusState = -1;
+	if(!Direct3DDeviceCreated)
+		return;
+
+	static int LastFocusState = 1;
     if(fullscreenExclusivent || (inFocus && LastFocusState == 1) || (!inFocus && LastFocusState == 0))
         return;
 
@@ -2737,7 +2763,7 @@ void HandleWindowFocus(HWND hwnd, bool inFocus)
 			lExStyle &= ~(WS_EX_DLGMODALFRAME|WS_EX_CLIENTEDGE|WS_EX_STATICEDGE);
 			SetWindowLongA(hwnd, GWL_STYLE, lStyle);
 			SetWindowLongA(hwnd, GWL_EXSTYLE, (lExStyle|WS_EX_TOPMOST));
-			SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, g_Direct3D9_PParams.BackBufferWidth, g_Direct3D9_PParams.BackBufferHeight, (SWP_NOMOVE|SWP_SHOWWINDOW));
+			SetWindowPos(hwnd, HWND_TOPMOST, WindowPositionX, WindowPositionY, g_Direct3D9_PParams.BackBufferWidth, g_Direct3D9_PParams.BackBufferHeight, SWP_SHOWWINDOW);
 		}
         LastFocusState = 1;
     }
