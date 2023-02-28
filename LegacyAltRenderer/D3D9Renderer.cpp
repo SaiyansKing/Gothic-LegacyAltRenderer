@@ -2136,6 +2136,11 @@ HRESULT WINAPI HookDirectDrawCreateEx_G1(GUID* lpGuid, LPVOID* lplpDD, REFIID ii
 				{
 					WindowPositionX = *reinterpret_cast<int*>(*reinterpret_cast<DWORD*>(0x4F42DA));
 					WindowPositionY = *reinterpret_cast<int*>(*reinterpret_cast<DWORD*>(0x4F42D3));
+					if(WindowPositionX == static_cast<int>(0x80000000) || WindowPositionY == static_cast<int>(0x80000000))
+					{
+						WindowPositionX = 0;
+						WindowPositionY = 0;
+					}
 				}
 
 				bool foundMode = false;
@@ -2450,7 +2455,12 @@ HRESULT WINAPI HookDirectDrawCreateEx_G2(GUID* lpGuid, LPVOID* lplpDD, REFIID ii
 				if(fullscreenExclusivent)
 				{
 					WindowPositionX = *reinterpret_cast<int*>(*reinterpret_cast<DWORD*>(0x503216));
-					WindowPositionY = *reinterpret_cast<int*>(*reinterpret_cast<DWORD*>(0x50320A));
+					WindowPositionY = *reinterpret_cast<int*>(*reinterpret_cast<DWORD*>(0x503209));
+					if(WindowPositionX == static_cast<int>(0x80000000) || WindowPositionY == static_cast<int>(0x80000000))
+					{
+						WindowPositionX = 0;
+						WindowPositionY = 0;
+					}
 				}
 
 				bool foundMode = false;
