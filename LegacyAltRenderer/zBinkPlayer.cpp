@@ -8,6 +8,7 @@
 
 extern bool IsG1;
 extern bool IsG2;
+extern int Direct3DDeviceCreated;
 
 bool NewBinkSetVolume = true;
 DWORD BinkOpenWaveOut;
@@ -332,8 +333,16 @@ int __fastcall BinkPlayerPlayFrame_G1(DWORD BinkPlayer)
 					ddsd.dwFlags = DDSD_CAPS | DDSD_WIDTH | DDSD_HEIGHT | DDSD_PIXELFORMAT;
 					ddsd.ddsCaps.dwCaps = DDSCAPS_TEXTURE | DDSCAPS_VIDEOMEMORY;
 					ddsd.ddsCaps.dwCaps2 = DDSCAPS2_HINTDYNAMIC;
-					ddsd.dwWidth = UTIL_power_of_2(vidWidth);
-					ddsd.dwHeight = UTIL_power_of_2(vidHeight);
+					if(Direct3DDeviceCreated)
+					{
+						ddsd.dwWidth = vidWidth;
+						ddsd.dwHeight = vidHeight;
+					}
+					else
+					{
+						ddsd.dwWidth = UTIL_power_of_2(vidWidth);
+						ddsd.dwHeight = UTIL_power_of_2(vidHeight);
+					}
 					ddsd.ddpfPixelFormat.dwSize = sizeof(ddsd.ddpfPixelFormat);
 					ddsd.ddpfPixelFormat.dwFlags = DDPF_RGB | DDPF_ALPHAPIXELS;
 					ddsd.ddpfPixelFormat.dwRGBBitCount = 32;
@@ -351,37 +360,65 @@ int __fastcall BinkPlayerPlayFrame_G1(DWORD BinkPlayer)
 					video->scaleTU = 1.0f / ddsd.dwWidth;
 					video->scaleTV = 1.0f / ddsd.dwHeight;
 				}
-
-				int srcPitch = vidWidth * 4;
-				reinterpret_cast<void(__stdcall*)(void*, void*, int, DWORD, DWORD, DWORD, DWORD)>(BinkCopyToBuffer)
-					(video->vid, video->textureData, vidWidth * 4, vidHeight, 0, 0, (video->useBGRA ? 3 : 4));
-				if(video->texture->IsLost() == DDERR_SURFACELOST)
-					video->texture->Restore();
-
-				DDSURFACEDESC2 ddsd;
-				ZeroMemory(&ddsd, sizeof(ddsd));
-				ddsd.dwSize = sizeof(ddsd);
-				HRESULT hr = video->texture->Lock(nullptr, &ddsd, DDLOCK_NOSYSLOCK | DDLOCK_WAIT | DDLOCK_WRITEONLY, nullptr);
-				if(FAILED(hr))
+				
+				if(Direct3DDeviceCreated)
 				{
-					*reinterpret_cast<int*>(BinkPlayer + 0x20) = 0;
-					return 0;
-				}
+					bool TempVideoBuffer_Lock(unsigned char*& data, INT & pitch, UINT width, UINT height);
+					void TempVideoBuffer_Unlock(IDirectDrawSurface7 * tex);
+					void TempVideoBuffer_Discard();
+					if(video->texture->IsLost() == DDERR_SURFACELOST)
+						video->texture->Restore();
 
-				if(ddsd.lPitch == srcPitch)
-					memcpy(ddsd.lpSurface, video->textureData, srcPitch * vidHeight);
-				else
-				{
-					unsigned char* dstData = reinterpret_cast<unsigned char*>(ddsd.lpSurface);
-					unsigned char* srcData = video->textureData;
-					for(DWORD h = 0; h < vidHeight; ++h)
+					unsigned char* videoBuffer;
+					INT srcPitch = vidWidth * 4;
+					if(TempVideoBuffer_Lock(videoBuffer, srcPitch, vidWidth, vidHeight))
 					{
-						memcpy(dstData, srcData, srcPitch);
-						dstData += ddsd.lPitch;
-						srcData += srcPitch;
+						int res = reinterpret_cast<int(__stdcall*)(void*, void*, int, DWORD, DWORD, DWORD, DWORD)>(BinkCopyToBuffer)
+							(video->vid, videoBuffer, srcPitch, vidHeight, 0, 0, (video->useBGRA ? 3 : 4) | 0x80000000L);
+						if(!res)
+							TempVideoBuffer_Unlock(video->texture);
+						else
+							TempVideoBuffer_Discard();
+					}
+					else
+					{
+						*reinterpret_cast<int*>(BinkPlayer + 0x20) = 0;
+						return 0;
 					}
 				}
-				video->texture->Unlock(nullptr);
+				else
+				{
+					int srcPitch = vidWidth * 4;
+					reinterpret_cast<void(__stdcall*)(void*, void*, int, DWORD, DWORD, DWORD, DWORD)>(BinkCopyToBuffer)
+						(video->vid, video->textureData, vidWidth * 4, vidHeight, 0, 0, (video->useBGRA ? 3 : 4));
+					if(video->texture->IsLost() == DDERR_SURFACELOST)
+						video->texture->Restore();
+
+					DDSURFACEDESC2 ddsd;
+					ZeroMemory(&ddsd, sizeof(ddsd));
+					ddsd.dwSize = sizeof(ddsd);
+					HRESULT hr = video->texture->Lock(nullptr, &ddsd, DDLOCK_NOSYSLOCK | DDLOCK_WAIT | DDLOCK_WRITEONLY, nullptr);
+					if(FAILED(hr))
+					{
+						*reinterpret_cast<int*>(BinkPlayer + 0x20) = 0;
+						return 0;
+					}
+
+					if(ddsd.lPitch == srcPitch)
+						memcpy(ddsd.lpSurface, video->textureData, srcPitch * vidHeight);
+					else
+					{
+						unsigned char* dstData = reinterpret_cast<unsigned char*>(ddsd.lpSurface);
+						unsigned char* srcData = video->textureData;
+						for(DWORD h = 0; h < vidHeight; ++h)
+						{
+							memcpy(dstData, srcData, srcPitch);
+							dstData += ddsd.lPitch;
+							srcData += srcPitch;
+						}
+					}
+					video->texture->Unlock(nullptr);
+				}
 
 				DWORD zrenderer = *reinterpret_cast<DWORD*>(0x8C5ED0);
 				int oldZWrite = reinterpret_cast<int(__thiscall*)(DWORD)>(*reinterpret_cast<DWORD*>
@@ -443,6 +480,7 @@ int __fastcall BinkPlayerPlayFrame_G1(DWORD BinkPlayer)
 
 				// Set video texture
 				reinterpret_cast<void(__thiscall*)(DWORD, int, LPDIRECTDRAWSURFACE7)>(0x718150)(zrenderer, 0, video->texture);
+				*reinterpret_cast<DWORD*>(zrenderer + 0x80E38 + (/*TEX0*/0 * 4)) = 0x00000000;
 
 				{
 					struct D3DTLVERTEX
@@ -608,8 +646,16 @@ int __fastcall BinkPlayerPlayFrame_G2(DWORD BinkPlayer)
 					ddsd.dwFlags = DDSD_CAPS | DDSD_WIDTH | DDSD_HEIGHT | DDSD_PIXELFORMAT;
 					ddsd.ddsCaps.dwCaps = DDSCAPS_TEXTURE | DDSCAPS_VIDEOMEMORY;
 					ddsd.ddsCaps.dwCaps2 = DDSCAPS2_HINTDYNAMIC;
-					ddsd.dwWidth = UTIL_power_of_2(vidWidth);
-					ddsd.dwHeight = UTIL_power_of_2(vidHeight);
+					if(Direct3DDeviceCreated)
+					{
+						ddsd.dwWidth = vidWidth;
+						ddsd.dwHeight = vidHeight;
+					}
+					else
+					{
+						ddsd.dwWidth = UTIL_power_of_2(vidWidth);
+						ddsd.dwHeight = UTIL_power_of_2(vidHeight);
+					}
 					ddsd.ddpfPixelFormat.dwSize = sizeof(ddsd.ddpfPixelFormat);
 					ddsd.ddpfPixelFormat.dwFlags = DDPF_RGB | DDPF_ALPHAPIXELS;
 					ddsd.ddpfPixelFormat.dwRGBBitCount = 32;
@@ -628,36 +674,64 @@ int __fastcall BinkPlayerPlayFrame_G2(DWORD BinkPlayer)
 					video->scaleTV = 1.0f / ddsd.dwHeight;
 				}
 
-				int srcPitch = vidWidth * 4;
-				reinterpret_cast<void(__stdcall*)(void*, void*, int, DWORD, DWORD, DWORD, DWORD)>(BinkCopyToBuffer)
-					(video->vid, video->textureData, vidWidth * 4, vidHeight, 0, 0, (video->useBGRA ? 3 : 4));
-				if(video->texture->IsLost() == DDERR_SURFACELOST)
-					video->texture->Restore();
-
-				DDSURFACEDESC2 ddsd;
-				ZeroMemory(&ddsd, sizeof(ddsd));
-				ddsd.dwSize = sizeof(ddsd);
-				HRESULT hr = video->texture->Lock(nullptr, &ddsd, DDLOCK_NOSYSLOCK | DDLOCK_WAIT | DDLOCK_WRITEONLY, nullptr);
-				if(FAILED(hr))
+				if(Direct3DDeviceCreated)
 				{
-					*reinterpret_cast<int*>(BinkPlayer + 0x20) = 0;
-					return 0;
-				}
+					bool TempVideoBuffer_Lock(unsigned char*& data, INT & pitch, UINT width, UINT height);
+					void TempVideoBuffer_Unlock(IDirectDrawSurface7 * tex);
+					void TempVideoBuffer_Discard();
+					if(video->texture->IsLost() == DDERR_SURFACELOST)
+						video->texture->Restore();
 
-				if(ddsd.lPitch == srcPitch)
-					memcpy(ddsd.lpSurface, video->textureData, srcPitch * vidHeight);
-				else
-				{
-					unsigned char* dstData = reinterpret_cast<unsigned char*>(ddsd.lpSurface);
-					unsigned char* srcData = video->textureData;
-					for(DWORD h = 0; h < vidHeight; ++h)
+					unsigned char* videoBuffer;
+					INT srcPitch = vidWidth * 4;
+					if(TempVideoBuffer_Lock(videoBuffer, srcPitch, vidWidth, vidHeight))
 					{
-						memcpy(dstData, srcData, srcPitch);
-						dstData += ddsd.lPitch;
-						srcData += srcPitch;
+						int res = reinterpret_cast<int(__stdcall*)(void*, void*, int, DWORD, DWORD, DWORD, DWORD)>(BinkCopyToBuffer)
+							(video->vid, videoBuffer, srcPitch, vidHeight, 0, 0, (video->useBGRA ? 3 : 4) | 0x80000000L);
+						if(!res)
+							TempVideoBuffer_Unlock(video->texture);
+						else
+							TempVideoBuffer_Discard();
+					}
+					else
+					{
+						*reinterpret_cast<int*>(BinkPlayer + 0x20) = 0;
+						return 0;
 					}
 				}
-				video->texture->Unlock(nullptr);
+				else
+				{
+					int srcPitch = vidWidth * 4;
+					reinterpret_cast<void(__stdcall*)(void*, void*, int, DWORD, DWORD, DWORD, DWORD)>(BinkCopyToBuffer)
+						(video->vid, video->textureData, vidWidth * 4, vidHeight, 0, 0, (video->useBGRA ? 3 : 4));
+					if(video->texture->IsLost() == DDERR_SURFACELOST)
+						video->texture->Restore();
+
+					DDSURFACEDESC2 ddsd;
+					ZeroMemory(&ddsd, sizeof(ddsd));
+					ddsd.dwSize = sizeof(ddsd);
+					HRESULT hr = video->texture->Lock(nullptr, &ddsd, DDLOCK_NOSYSLOCK | DDLOCK_WAIT | DDLOCK_WRITEONLY, nullptr);
+					if(FAILED(hr))
+					{
+						*reinterpret_cast<int*>(BinkPlayer + 0x20) = 0;
+						return 0;
+					}
+
+					if(ddsd.lPitch == srcPitch)
+						memcpy(ddsd.lpSurface, video->textureData, srcPitch * vidHeight);
+					else
+					{
+						unsigned char* dstData = reinterpret_cast<unsigned char*>(ddsd.lpSurface);
+						unsigned char* srcData = video->textureData;
+						for(DWORD h = 0; h < vidHeight; ++h)
+						{
+							memcpy(dstData, srcData, srcPitch);
+							dstData += ddsd.lPitch;
+							srcData += srcPitch;
+						}
+					}
+					video->texture->Unlock(nullptr);
+				}
 
 				DWORD zrenderer = *reinterpret_cast<DWORD*>(0x982F08);
 				int oldZWrite = reinterpret_cast<int(__thiscall*)(DWORD)>(*reinterpret_cast<DWORD*>
@@ -719,6 +793,7 @@ int __fastcall BinkPlayerPlayFrame_G2(DWORD BinkPlayer)
 
 				// Set video texture
 				reinterpret_cast<void(__thiscall*)(DWORD, int, LPDIRECTDRAWSURFACE7)>(0x650500)(zrenderer, 0, video->texture);
+				*reinterpret_cast<DWORD*>(zrenderer + 0x82E50 + (/*TEX0*/0 * 4)) = 0x00000000;
 
 				{
 					struct D3DTLVERTEX

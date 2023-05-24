@@ -33,6 +33,7 @@ IDirect3DPixelShader9* g_GammaCorrectionPS = nullptr;
 IDirect3DSurface9* g_DefaultRenderTarget = nullptr;
 IDirect3DSurface9* g_ManagedBoundTarget = nullptr;
 IDirect3DTexture9* g_ManagedBackBuffer = nullptr;
+IDirect3DTexture9* g_ManagedVideoBuffer = nullptr;
 IDirect3DIndexBuffer9* g_ManagedIndexBuffer = nullptr;
 UINT g_ManagedIndexBufferSize = 0;
 UINT g_ManagedIndexBufferPos = 0;
@@ -3078,4 +3079,48 @@ void InstallD3D9Renderer_G2(int rendererOption, int msaa, bool vsync)
 			exit(-1);
 		}
 	}
+}
+
+bool TempVideoBuffer_Lock(unsigned char*& data, INT& pitch, UINT width, UINT height)
+{
+	HRESULT result = IDirect3DDevice9_CreateTexture(g_Direct3D9Device9, width, height, 1, 0, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM, &g_ManagedVideoBuffer, nullptr);
+	if(FAILED(result))
+		return false;
+
+	D3DLOCKED_RECT locked;
+	result = IDirect3DTexture9_LockRect(g_ManagedVideoBuffer, 0, &locked, nullptr, D3DLOCK_NOSYSLOCK);
+	if(FAILED(result))
+	{
+		IDirect3DTexture9_Release(g_ManagedVideoBuffer);
+		return false;
+	}
+
+	pitch = locked.Pitch;
+	data = reinterpret_cast<unsigned char*>(locked.pBits);
+	return true;
+}
+
+void TempVideoBuffer_Unlock(IDirectDrawSurface7* tex)
+{
+	HRESULT result = IDirect3DTexture9_UnlockRect(g_ManagedVideoBuffer, 0);
+	if(FAILED(result))
+	{
+		IDirect3DTexture9_Release(g_ManagedVideoBuffer);
+		return;
+	}
+
+	IDirect3DTexture9* texture = static_cast<MyDirectDrawSurface7*>(tex)->GetTexture();
+	IDirect3DSurface9* destSurface;
+	IDirect3DSurface9* stagingSurface;
+	IDirect3DTexture9_GetSurfaceLevel(g_ManagedVideoBuffer, 0, &stagingSurface);
+	IDirect3DTexture9_GetSurfaceLevel(texture, 0, &destSurface);
+	IDirect3DDevice9_UpdateSurface(g_Direct3D9Device9, stagingSurface, nullptr, destSurface, nullptr);
+	IDirect3DSurface9_Release(destSurface);
+	IDirect3DSurface9_Release(stagingSurface);
+	IDirect3DTexture9_Release(g_ManagedVideoBuffer);
+}
+
+void TempVideoBuffer_Discard()
+{
+	IDirect3DTexture9_Release(g_ManagedVideoBuffer);
 }

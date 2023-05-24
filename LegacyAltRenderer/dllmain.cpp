@@ -643,8 +643,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			SendMessage(lbox, LB_SETITEMDATA, static_cast<int>(SendMessage(lbox, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"DirectX9"))), 9);
 			SendMessage(lbox, LB_SETITEMDATA, static_cast<int>(SendMessage(lbox, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"DirectX12"))), 12);
 			SendMessage(lbox, LB_SETITEMDATA, static_cast<int>(SendMessage(lbox, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Vulkan (DXVK 1.10.3)"))), 5);
-			SendMessage(lbox, LB_SETITEMDATA, static_cast<int>(SendMessage(lbox, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Vulkan (DXVK 2.1)"))), 6);
-			SendMessage(lbox, LB_SETITEMDATA, static_cast<int>(SendMessage(lbox, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"OpenGL (WineD3D 8.2)"))), 3);
+			SendMessage(lbox, LB_SETITEMDATA, static_cast<int>(SendMessage(lbox, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Vulkan (DXVK 2.2)"))), 6);
+			SendMessage(lbox, LB_SETITEMDATA, static_cast<int>(SendMessage(lbox, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"OpenGL (WineD3D 8.8)"))), 3);
 
 			abox = CreateWindow(L"LISTBOX", L"", (WS_CHILD|WS_VISIBLE|WS_BORDER), 5, 110, 185, 70, hWnd, 0, 0, 0);
 			SendMessage(abox, LB_SETITEMDATA, static_cast<int>(SendMessage(abox, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"No Anti-Aliasing"))), 0);
