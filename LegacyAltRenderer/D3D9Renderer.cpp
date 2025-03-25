@@ -2,6 +2,7 @@
 #include "Conversions.h"
 #include "hook.h"
 
+#include <atomic>
 #include <intrin.h>
 #include <algorithm>
 #include <vector>
@@ -43,6 +44,7 @@ bool g_HaveGammeCorrection = true;
 
 D3DMULTISAMPLE_TYPE g_MultiSampleAntiAliasing = D3DMULTISAMPLE_NONE;
 bool g_UseVsync = false;
+bool g_EmulateRadialFog = false;
 
 float g_DeviceGamma = 0.5f;
 float g_DeviceContrast = 0.5f;
@@ -1321,7 +1323,6 @@ class MyDirect3DDevice7 : public IDirect3DDevice7
 				case 28:
 				case 29:
 				case 34:
-				case 35:
 				case 36:
 				case 37:
 				case 38:
@@ -1358,6 +1359,17 @@ class MyDirect3DDevice7 : public IDirect3DDevice7
 				case 152:
 					result = IDirect3DDevice9_SetRenderState(g_Direct3D9Device9, State, Value);
 					break;
+				case 35:
+				{
+					if(g_EmulateRadialFog)
+					{
+						IDirect3DDevice9_SetRenderState(g_Direct3D9Device9, D3DRS_RANGEFOGENABLE, Value != D3DFOG_NONE);
+						result = IDirect3DDevice9_SetRenderState(g_Direct3D9Device9, D3DRS_FOGVERTEXMODE, Value);
+					}
+					else
+						result = IDirect3DDevice9_SetRenderState(g_Direct3D9Device9, State, Value);
+				}
+				break;
 			}
 			return result;
 		}
@@ -2293,6 +2305,13 @@ HRESULT WINAPI HookDirectDrawCreateEx_G1(GUID* lpGuid, LPVOID* lplpDD, REFIID ii
 						D3DFMT_X8R8G8B8, g_MultiSampleAntiAliasing, 0, FALSE, &g_ManagedBoundTarget, NULL);
 			}
 
+			if(GetModuleHandleA("D3D12Core.dll") && GetModuleHandleA("d3d9on12.dll"))
+			{
+				extern std::atomic<bool> selected_rdepth;
+				if(selected_rdepth.load())
+					MessageBoxA(nullptr, "Warning: Using reverse depth buffer on this graphic api can have problems with rendering inventory.", "Legacy Alt Renderer", MB_ICONEXCLAMATION);
+			}
+
 			result = IDirect3DDevice9_CreatePixelShader(g_Direct3D9Device9, D3D9_GammaCorrection, &g_GammaCorrectionPS);
 			if(FAILED(result))
 				g_HaveGammeCorrection = false;
@@ -2611,6 +2630,13 @@ HRESULT WINAPI HookDirectDrawCreateEx_G2(GUID* lpGuid, LPVOID* lplpDD, REFIID ii
 				if(SUCCEEDED(result))
 					IDirect3DDevice9_CreateRenderTarget(g_Direct3D9Device9, g_Direct3D9_PParams.BackBufferWidth, g_Direct3D9_PParams.BackBufferHeight,
 						D3DFMT_X8R8G8B8, g_MultiSampleAntiAliasing, 0, FALSE, &g_ManagedBoundTarget, NULL);
+			}
+
+			if(GetModuleHandleA("D3D12Core.dll") && GetModuleHandleA("d3d9on12.dll"))
+			{
+				extern std::atomic<bool> selected_rdepth;
+				if(selected_rdepth.load())
+					MessageBoxA(nullptr, "Warning: Using reverse depth buffer on this graphic api can have problems with rendering inventory.", "Legacy Alt Renderer", MB_ICONEXCLAMATION);
 			}
 
 			result = IDirect3DDevice9_CreatePixelShader(g_Direct3D9Device9, D3D9_GammaCorrection, &g_GammaCorrectionPS);
@@ -2942,7 +2968,58 @@ HRESULT STDMETHODCALLTYPE FrontBufferUnlock(DWORD texturePointer, LPRECT lpRect)
 	return S_OK;
 }
 
-void InstallD3D9Renderer_G1(int rendererOption, int msaa, bool vsync)
+void EnableRadialFog_G1()
+{
+	if(!g_EmulateRadialFog)
+	{
+		DWORD fogTMode;
+		IDirect3DDevice9_GetRenderState(g_Direct3D9Device9, D3DRS_FOGTABLEMODE, &fogTMode);
+		IDirect3DDevice9_SetRenderState(g_Direct3D9Device9, D3DRS_RANGEFOGENABLE, fogTMode != D3DFOG_NONE);
+		IDirect3DDevice9_SetRenderState(g_Direct3D9Device9, D3DRS_FOGVERTEXMODE, fogTMode);
+		IDirect3DDevice9_SetRenderState(g_Direct3D9Device9, D3DRS_FOGTABLEMODE, D3DFOG_NONE);
+		g_EmulateRadialFog = true;
+	}
+}
+
+void DisableRadialFog_G1()
+{
+	if(g_EmulateRadialFog)
+	{
+		DWORD fogVMode;
+		IDirect3DDevice9_GetRenderState(g_Direct3D9Device9, D3DRS_FOGVERTEXMODE, &fogVMode);
+		IDirect3DDevice9_SetRenderState(g_Direct3D9Device9, D3DRS_RANGEFOGENABLE, FALSE);
+		IDirect3DDevice9_SetRenderState(g_Direct3D9Device9, D3DRS_FOGVERTEXMODE, D3DFOG_NONE);
+		IDirect3DDevice9_SetRenderState(g_Direct3D9Device9, D3DRS_FOGTABLEMODE, fogVMode);
+		g_EmulateRadialFog = false;
+	}
+}
+
+int __fastcall StartRadialFog_Indoor_G1(DWORD zCRnd_D3D, DWORD _EDX, int flags)
+{
+	int res = reinterpret_cast<int(__thiscall*)(DWORD, int)>(*reinterpret_cast<DWORD*>(*reinterpret_cast<DWORD*>(zCRnd_D3D) + 0xA8))(zCRnd_D3D, flags);
+	EnableRadialFog_G1();
+	return res;
+}
+
+void __fastcall StartRadialFog_Outdoor_PreSky_G1(DWORD zCSkyControler)
+{
+	reinterpret_cast<void(__thiscall*)(DWORD)>(*reinterpret_cast<DWORD*>(*reinterpret_cast<DWORD*>(zCSkyControler) + 0x50))(zCSkyControler);
+	EnableRadialFog_G1();
+}
+
+void __fastcall StartRadialFog_Outdoor_VidClear_G1(DWORD zCRnd_D3D, DWORD _EDX, DWORD clr, int flags)
+{
+	reinterpret_cast<void(__thiscall*)(DWORD, DWORD, int)>(*reinterpret_cast<DWORD*>(*reinterpret_cast<DWORD*>(zCRnd_D3D) + 0xDC))(zCRnd_D3D, clr, flags);
+	EnableRadialFog_G1();
+}
+
+void __fastcall EndRadialFog_G1(DWORD zCRnd_D3D)
+{
+	reinterpret_cast<void(__thiscall*)(DWORD)>(*reinterpret_cast<DWORD*>(*reinterpret_cast<DWORD*>(zCRnd_D3D) + 0x15C))(zCRnd_D3D);
+	DisableRadialFog_G1();
+}
+
+void InstallD3D9Renderer_G1(int rendererOption, int msaa, bool vsync, bool radialFog)
 {
 	const char* renderDLL = "d3d9.dll";
 	if(rendererOption == 5)
@@ -2968,7 +3045,14 @@ void InstallD3D9Renderer_G1(int rendererOption, int msaa, bool vsync)
 		{
 			g_MultiSampleAntiAliasing = static_cast<D3DMULTISAMPLE_TYPE>(msaa);
 			g_UseVsync = vsync;
-
+			if(radialFog)
+			{
+				HookCallN(0x51DAEC, reinterpret_cast<DWORD>(&StartRadialFog_Indoor_G1));
+				HookCall(0x51DE54, reinterpret_cast<DWORD>(&StartRadialFog_Outdoor_PreSky_G1));
+				HookCall(0x51DEDC, reinterpret_cast<DWORD>(&StartRadialFog_Outdoor_PreSky_G1));
+				HookCallN(0x51DF88, reinterpret_cast<DWORD>(&StartRadialFog_Outdoor_VidClear_G1));
+				HookCallN(0x5F3FB4, reinterpret_cast<DWORD>(&EndRadialFog_G1));
+			}
 			HookJMPN(0x75B482, reinterpret_cast<DWORD>(&HookDirectDrawCreateEx_G1));
 			HookJMPN(0x75B488, reinterpret_cast<DWORD>(&HookDirectDrawEnumerateA));
 			HookJMPN(0x772E48, reinterpret_cast<DWORD>(&HookDirectDrawEnumerateExA));

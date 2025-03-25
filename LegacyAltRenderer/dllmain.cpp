@@ -44,10 +44,13 @@ constexpr int option_lighthack = 1000;
 constexpr int option_reversedepth = 1001;
 constexpr int option_vsync = 1002;
 constexpr int option_launch = 1003;
+constexpr int option_skip = 1004;
 
+std::atomic<bool> enable_radialFog_G1 = true;
 std::atomic<bool> selected_lighthack = false;
 std::atomic<bool> selected_rdepth = true;
 std::atomic<bool> selected_vsync = false;
+std::atomic<bool> selected_skip = false;
 std::atomic<int> selected_option = 0;
 std::atomic<int> selected_msaa = 0;
 
@@ -108,6 +111,10 @@ static void LoadCFG(HWND hWnd, HWND rendererBox, HWND msaaBox)
 					try {selected_option.store(std::stoi(rhLine));}
 					catch(const std::exception&) {selected_option.store(0);}
 				}
+				else if(lhLine == "RADIALFOG_G1")
+					enable_radialFog_G1.store(rhLine == "TRUE" || rhLine == "1");
+				else if(lhLine == "SKIPLAUNCHER")
+					selected_skip.store(rhLine == "TRUE" || rhLine == "1");
 			}
 		}
 		fclose(f);
@@ -116,6 +123,7 @@ static void LoadCFG(HWND hWnd, HWND rendererBox, HWND msaaBox)
 	CheckDlgButton(hWnd, option_lighthack, (selected_lighthack.load() ? BST_CHECKED : BST_UNCHECKED));
 	CheckDlgButton(hWnd, option_reversedepth, (selected_rdepth.load() ? BST_CHECKED : BST_UNCHECKED));
 	CheckDlgButton(hWnd, option_vsync, (selected_vsync.load() ? BST_CHECKED : BST_UNCHECKED));
+	CheckDlgButton(hWnd, option_skip, (selected_skip.load() ? BST_CHECKED : BST_UNCHECKED));
 
 	int msaaOption = selected_msaa.load();
 	if(msaaOption == 8) SendMessage(msaaBox, LB_SETCURSEL, 3, 0);
@@ -147,6 +155,8 @@ static void SaveCFG()
 		fputs((std::string("VSync = ") + (selected_vsync.load() ? "True\n" : "False\n")).c_str(), f);
 		fputs((std::string("MSAA = ") + std::to_string(selected_msaa.load()) + "\n").c_str(), f);
 		fputs((std::string("Renderer = ") + std::to_string(selected_option.load()) + "\n").c_str(), f);
+		fputs((std::string("RadialFog_G1 = ") + (enable_radialFog_G1.load() ? "True\n" : "False\n")).c_str(), f);
+		fputs((std::string("SkipLauncher = ") + (selected_skip.load() ? "True\n" : "False\n")).c_str(), f);
 		fclose(f);
 	}
 }
@@ -566,6 +576,14 @@ struct zTRndSimpleVertex
 
 void __fastcall zCRenderer_DrawPolySimple_Fix_G1(DWORD zCRenderer, DWORD _EDX, DWORD texture, zTRndSimpleVertex* vertices, int numVertices)
 {
+	extern bool g_EmulateRadialFog;
+	bool enabledRadialFog = g_EmulateRadialFog;
+	if(enabledRadialFog)
+	{
+		void DisableRadialFog_G1();
+		DisableRadialFog_G1();
+	}
+
 	int texWrap = reinterpret_cast<int(__thiscall*)(DWORD)>(*reinterpret_cast<DWORD*>(*reinterpret_cast<DWORD*>(zCRenderer) + 0x4C))(zCRenderer);
 	reinterpret_cast<void(__thiscall*)(DWORD, int)>(*reinterpret_cast<DWORD*>(*reinterpret_cast<DWORD*>(zCRenderer) + 0x48))(zCRenderer, 0);
 	for(int i = 0; i < numVertices; ++i)
@@ -576,6 +594,11 @@ void __fastcall zCRenderer_DrawPolySimple_Fix_G1(DWORD zCRenderer, DWORD _EDX, D
 	}
 	reinterpret_cast<void(__thiscall*)(DWORD, DWORD, zTRndSimpleVertex*, int)>(*reinterpret_cast<DWORD*>(*reinterpret_cast<DWORD*>(zCRenderer) + 0x24))(zCRenderer, texture, vertices, numVertices);
 	reinterpret_cast<void(__thiscall*)(DWORD, int)>(*reinterpret_cast<DWORD*>(*reinterpret_cast<DWORD*>(zCRenderer) + 0x48))(zCRenderer, texWrap);
+	if(enabledRadialFog)
+	{
+		void EnableRadialFog_G1();
+		EnableRadialFog_G1();
+	}
 }
 
 void __fastcall zCRenderer_DrawPolySimple_Fix_G2(DWORD zCRenderer, DWORD _EDX, DWORD texture, zTRndSimpleVertex* vertices, int numVertices)
@@ -592,7 +615,31 @@ void __fastcall zCRenderer_DrawPolySimple_Fix_G2(DWORD zCRenderer, DWORD _EDX, D
 	reinterpret_cast<void(__thiscall*)(DWORD, int)>(*reinterpret_cast<DWORD*>(*reinterpret_cast<DWORD*>(zCRenderer) + 0x60))(zCRenderer, texWrap);
 }
 
-void __fastcall zCRenderer_DrawPolySimple(DWORD zCRenderer, DWORD _EDX, DWORD texture, zTRndSimpleVertex* vertices, int numVertices)
+void __fastcall zCRenderer_DrawPolySimple_G1(DWORD zCRenderer, DWORD _EDX, DWORD texture, zTRndSimpleVertex* vertices, int numVertices)
+{
+	extern bool g_EmulateRadialFog;
+	bool enabledRadialFog = g_EmulateRadialFog;
+	if(enabledRadialFog)
+	{
+		void DisableRadialFog_G1();
+		DisableRadialFog_G1();
+	}
+
+	for(int i = 0; i < numVertices; ++i)
+	{
+		zTRndSimpleVertex& vert = vertices[i];
+		vert.pos[0] -= 0.5f;
+		vert.pos[1] -= 0.5f;
+	}
+	reinterpret_cast<void(__thiscall*)(DWORD, DWORD, zTRndSimpleVertex*, int)>(*reinterpret_cast<DWORD*>(*reinterpret_cast<DWORD*>(zCRenderer) + 0x24))(zCRenderer, texture, vertices, numVertices);
+	if(enabledRadialFog)
+	{
+		void EnableRadialFog_G1();
+		EnableRadialFog_G1();
+	}
+}
+
+void __fastcall zCRenderer_DrawPolySimple_G2(DWORD zCRenderer, DWORD _EDX, DWORD texture, zTRndSimpleVertex* vertices, int numVertices)
 {
 	for(int i = 0; i < numVertices; ++i)
 	{
@@ -641,10 +688,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			lbox = CreateWindow(L"LISTBOX", L"", (WS_CHILD|WS_VISIBLE|WS_BORDER), 5, 5, 185, 100, hWnd, 0, 0, 0);
 			SendMessage(lbox, LB_SETITEMDATA, static_cast<int>(SendMessage(lbox, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"DirectX7"))), 7);
 			SendMessage(lbox, LB_SETITEMDATA, static_cast<int>(SendMessage(lbox, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"DirectX9"))), 9);
-			SendMessage(lbox, LB_SETITEMDATA, static_cast<int>(SendMessage(lbox, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"DirectX12"))), 12);
+			if(UTILS_IsWindows10OrGreater()) SendMessage(lbox, LB_SETITEMDATA, static_cast<int>(SendMessage(lbox, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"DirectX12"))), 12);
 			SendMessage(lbox, LB_SETITEMDATA, static_cast<int>(SendMessage(lbox, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Vulkan (DXVK 1.10.3)"))), 5);
-			SendMessage(lbox, LB_SETITEMDATA, static_cast<int>(SendMessage(lbox, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Vulkan (DXVK 2.2)"))), 6);
-			SendMessage(lbox, LB_SETITEMDATA, static_cast<int>(SendMessage(lbox, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"OpenGL (WineD3D 8.8)"))), 3);
+			SendMessage(lbox, LB_SETITEMDATA, static_cast<int>(SendMessage(lbox, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Vulkan (DXVK 2.6)"))), 6);
+			SendMessage(lbox, LB_SETITEMDATA, static_cast<int>(SendMessage(lbox, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"OpenGL (WineD3D 10.0)"))), 3);
 
 			abox = CreateWindow(L"LISTBOX", L"", (WS_CHILD|WS_VISIBLE|WS_BORDER), 5, 110, 185, 70, hWnd, 0, 0, 0);
 			SendMessage(abox, LB_SETITEMDATA, static_cast<int>(SendMessage(abox, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"No Anti-Aliasing"))), 0);
@@ -655,9 +702,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			CreateWindow(L"button", L"Light hack", (WS_CHILD|WS_VISIBLE|BS_CHECKBOX), 5, 180, 185, 18, hWnd, reinterpret_cast<HMENU>(option_lighthack), 0, 0);
 			CreateWindow(L"button", L"Reverse depth buffer", (WS_CHILD|WS_VISIBLE|BS_CHECKBOX), 5, 200, 185, 18, hWnd, reinterpret_cast<HMENU>(option_reversedepth), 0, 0);
 			CreateWindow(L"button", L"Vertical Synchronization", (WS_CHILD|WS_VISIBLE|BS_CHECKBOX), 5, 220, 185, 18, hWnd, reinterpret_cast<HMENU>(option_vsync), 0, 0);
-			CreateWindow(L"button", L"Launch", (WS_CHILD|WS_VISIBLE|WS_BORDER), 5, 245, 185, 30, hWnd, reinterpret_cast<HMENU>(option_launch), 0, 0);
+			CreateWindow(L"button", L"Skip Launcher", (WS_CHILD|WS_VISIBLE|BS_CHECKBOX), 5, 240, 185, 18, hWnd, reinterpret_cast<HMENU>(option_skip), 0, 0);
+			CreateWindow(L"button", L"Launch", (WS_CHILD|WS_VISIBLE|WS_BORDER), 5, 265, 185, 30, hWnd, reinterpret_cast<HMENU>(option_launch), 0, 0);
 
 			LoadCFG(hWnd, lbox, abox);
+			if(selected_skip.load())
+				PostQuitMessage(0);
 		}
 		break;
 		case WM_COMMAND:
@@ -692,6 +742,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				if(IsDlgButtonChecked(hWnd, option_vsync)) selected_vsync.store(true);
 				else selected_vsync.store(false);
 			}
+			else if(wmId == option_skip)
+			{
+				CheckDlgButton(hWnd, option_skip, (IsDlgButtonChecked(hWnd, option_skip) ? BST_UNCHECKED : BST_CHECKED));
+				if(IsDlgButtonChecked(hWnd, option_skip)) selected_skip.store(true);
+				else selected_skip.store(false);
+			}
 		}
 		break;
 		case WM_DISPLAYCHANGE: InvalidateRect(hWnd, nullptr, FALSE); break;
@@ -722,7 +778,7 @@ void InitRenderChoosing()
 	RegisterClassEx(&wcex);
 
 	int width = 200;
-	int height = 310;
+	int height = 330;
 	int xPos = (GetSystemMetrics(SM_CXSCREEN) / 2) - (width / 2);
 	int yPos = (GetSystemMetrics(SM_CYSCREEN) / 2) - (height / 2);
 
@@ -750,8 +806,8 @@ DWORD __fastcall InitCommonControls_G1(DWORD zString, DWORD _EDX, DWORD argument
 	int option = selected_option.load();
 	if(option != 7)
 	{
-		void InstallD3D9Renderer_G1(int, int, bool);
-		InstallD3D9Renderer_G1(option, selected_msaa.load(), selected_vsync.load());
+		void InstallD3D9Renderer_G1(int, int, bool, bool);
+		InstallD3D9Renderer_G1(option, selected_msaa.load(), selected_vsync.load(), enable_radialFog_G1.load());
 	}
 	else
 	{
@@ -967,7 +1023,7 @@ BOOL WINAPI DllMain(HINSTANCE hInst, DWORD reason, LPVOID)
 			OverWriteByte(0x5AF31A, 0x56);
 			OverWriteWord(0x5AF0DC, 0xCB8B);
 			HookCall(0x5AF31B, reinterpret_cast<DWORD>(&zCRenderer_DrawPolySimple_Fix_G1));
-			HookCall(0x5AF0E6, reinterpret_cast<DWORD>(&zCRenderer_DrawPolySimple));
+			HookCall(0x5AF0E6, reinterpret_cast<DWORD>(&zCRenderer_DrawPolySimple_G1));
 
 			// Optimize qsort's
 			HookCall(0x5B1DA0, reinterpret_cast<DWORD>(&HookSortMaterialPolys_G1));
@@ -1015,7 +1071,7 @@ BOOL WINAPI DllMain(HINSTANCE hInst, DWORD reason, LPVOID)
 			OverWriteByte(0x5D45CA, 0x56);
 			OverWriteWord(0x5D438C, 0xCB8B);
 			HookCall(0x5D45CB, reinterpret_cast<DWORD>(&zCRenderer_DrawPolySimple_Fix_G2));
-			HookCall(0x5D4396, reinterpret_cast<DWORD>(&zCRenderer_DrawPolySimple));
+			HookCall(0x5D4396, reinterpret_cast<DWORD>(&zCRenderer_DrawPolySimple_G2));
 
 			// Optimize qsort's
 			HookCall(0x5D7BE3, reinterpret_cast<DWORD>(&HookSortMaterialPolys_G2));

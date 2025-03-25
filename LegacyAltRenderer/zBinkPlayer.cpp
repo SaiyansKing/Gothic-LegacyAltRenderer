@@ -79,17 +79,17 @@ int __fastcall BinkPlayerPlayHandleEvents_G1(DWORD BinkPlayer)
 
 	DWORD zInput = *reinterpret_cast<DWORD*>(0x86CCA0);
 	WORD key = reinterpret_cast<WORD(__thiscall*)(DWORD, int, int)>(*reinterpret_cast<DWORD*>
-        (*reinterpret_cast<DWORD*>(zInput) + 0x2C))(zInput, 0, 0);
+		(*reinterpret_cast<DWORD*>(zInput) + 0x2C))(zInput, 0, 0);
 	reinterpret_cast<void(__thiscall*)(DWORD)>(*reinterpret_cast<DWORD*>
-        (*reinterpret_cast<DWORD*>(zInput) + 0x70))(zInput);
+		(*reinterpret_cast<DWORD*>(zInput) + 0x70))(zInput);
 	switch(key)
 	{
 		case 0x01: // DIK_ESCAPE
 			reinterpret_cast<void(__thiscall*)(DWORD)>(*reinterpret_cast<DWORD*>
-                (*reinterpret_cast<DWORD*>(BinkPlayer) + 0x20))(BinkPlayer);
+				(*reinterpret_cast<DWORD*>(BinkPlayer) + 0x20))(BinkPlayer);
 			break;
 		case 0x39: // DIK_SPACE
-        {
+		{
 			if(*reinterpret_cast<int*>(BinkPlayer + 0x1C))
 			{
 				reinterpret_cast<void(__stdcall*)(void*, int)>(BinkPause)(video->vid, 0);
@@ -103,7 +103,7 @@ int __fastcall BinkPlayerPlayHandleEvents_G1(DWORD BinkPlayer)
 		}
 		break;
 		case 0x10: // DIK_Q
-        {
+		{
 			if(*reinterpret_cast<int*>(BinkPlayer + 0x24))
 			{
 				video->globalVolume = 0.f;
@@ -112,20 +112,20 @@ int __fastcall BinkPlayerPlayHandleEvents_G1(DWORD BinkPlayer)
 			}
 			else
 			{
-                video->globalVolume = BinkPlayerReadGlobalVolume(*reinterpret_cast<DWORD*>(0x869694));
+				video->globalVolume = BinkPlayerReadGlobalVolume(*reinterpret_cast<DWORD*>(0x869694));
 				video->updateVolume = true;
 				*reinterpret_cast<int*>(BinkPlayer + 0x24) = 1;
 			}
 		}
 		break;
 		case 0xC8: // DIK_UP
-        {
+		{
 			video->videoVolume = std::min<float>(1.0f, video->videoVolume + 0.05f);
 			video->updateVolume = true;
 		}
 		break;
 		case 0xD0: // DIK_DOWN
-        {
+		{
 			video->videoVolume = std::max<float>(0.0f, video->videoVolume - 0.05f);
 			video->updateVolume = true;
 		}
@@ -145,17 +145,17 @@ int __fastcall BinkPlayerPlayHandleEvents_G2(DWORD BinkPlayer)
 
 	DWORD zInput = *reinterpret_cast<DWORD*>(0x8D1650);
 	WORD key = reinterpret_cast<WORD(__thiscall*)(DWORD, int, int)>(*reinterpret_cast<DWORD*>
-        (*reinterpret_cast<DWORD*>(zInput) + 0x2C))(zInput, 0, 0);
+		(*reinterpret_cast<DWORD*>(zInput) + 0x2C))(zInput, 0, 0);
 	reinterpret_cast<void(__thiscall*)(DWORD)>(*reinterpret_cast<DWORD*>
-        (*reinterpret_cast<DWORD*>(zInput) + 0x74))(zInput);
+		(*reinterpret_cast<DWORD*>(zInput) + 0x74))(zInput);
 	switch(key)
 	{
 		case 0x01: // DIK_ESCAPE
 			reinterpret_cast<void(__thiscall*)(DWORD)>(*reinterpret_cast<DWORD*>
-                (*reinterpret_cast<DWORD*>(BinkPlayer) + 0x20))(BinkPlayer);
+				(*reinterpret_cast<DWORD*>(BinkPlayer) + 0x20))(BinkPlayer);
 			break;
 		case 0x39: // DIK_SPACE
-        {
+		{
 			if(*reinterpret_cast<int*>(BinkPlayer + 0x1C))
 			{
 				reinterpret_cast<void(__stdcall*)(void*, int)>(BinkPause)(video->vid, 0);
@@ -169,7 +169,7 @@ int __fastcall BinkPlayerPlayHandleEvents_G2(DWORD BinkPlayer)
 		}
 		break;
 		case 0x10: // DIK_Q
-        {
+		{
 			if(*reinterpret_cast<int*>(BinkPlayer + 0x24))
 			{
 				video->globalVolume = 0.f;
@@ -178,20 +178,20 @@ int __fastcall BinkPlayerPlayHandleEvents_G2(DWORD BinkPlayer)
 			}
 			else
 			{
-                video->globalVolume = BinkPlayerReadGlobalVolume(*reinterpret_cast<DWORD*>(0x8CD988));
+				video->globalVolume = BinkPlayerReadGlobalVolume(*reinterpret_cast<DWORD*>(0x8CD988));
 				video->updateVolume = true;
 				*reinterpret_cast<int*>(BinkPlayer + 0x24) = 1;
 			}
 		}
 		break;
 		case 0xC8: // DIK_UP
-        {
+		{
 			video->videoVolume = std::min<float>(1.0f, video->videoVolume + 0.05f);
 			video->updateVolume = true;
 		}
 		break;
 		case 0xD0: // DIK_DOWN
-        {
+		{
 			video->videoVolume = std::max<float>(0.0f, video->videoVolume - 0.05f);
 			video->updateVolume = true;
 		}
@@ -219,7 +219,7 @@ int __fastcall BinkPlayerToggleSound_G1(DWORD BinkPlayer)
 	}
 	else
 	{
-        video->globalVolume = BinkPlayerReadGlobalVolume(*reinterpret_cast<DWORD*>(0x869694));
+		video->globalVolume = BinkPlayerReadGlobalVolume(*reinterpret_cast<DWORD*>(0x869694));
 		video->updateVolume = true;
 		*reinterpret_cast<int*>(BinkPlayer + 0x24) = 1;
 	}
@@ -237,7 +237,7 @@ int __fastcall BinkPlayerToggleSound_G2(DWORD BinkPlayer)
 	}
 	else
 	{
-        video->globalVolume = BinkPlayerReadGlobalVolume(*reinterpret_cast<DWORD*>(0x8CD988));
+		video->globalVolume = BinkPlayerReadGlobalVolume(*reinterpret_cast<DWORD*>(0x8CD988));
 		video->updateVolume = true;
 		*reinterpret_cast<int*>(BinkPlayer + 0x24) = 1;
 	}
@@ -264,7 +264,7 @@ int __fastcall BinkPlayerIsPlaying(DWORD BinkPlayer)
 	if(video &&
 		(*reinterpret_cast<int*>(BinkPlayer + 0x20)) &&
 		((*reinterpret_cast<int*>(BinkPlayer + 0x18)) ||
-		*reinterpret_cast<DWORD*>(reinterpret_cast<DWORD>(video->vid) + 0x08) > *reinterpret_cast<DWORD*>(reinterpret_cast<DWORD>(video->vid) + 0x0C)))
+			*reinterpret_cast<DWORD*>(reinterpret_cast<DWORD>(video->vid) + 0x08) > *reinterpret_cast<DWORD*>(reinterpret_cast<DWORD>(video->vid) + 0x0C)))
 		return 1;
 
 	return 0;
@@ -281,7 +281,7 @@ int __fastcall BinkPlayerPlayWaitNextFrame(DWORD BinkPlayer)
 {
 	BinkVideo* video = *reinterpret_cast<BinkVideo**>(BinkPlayer + 0x30);
 	while(BinkPlayerIsPlaying(BinkPlayer) && reinterpret_cast<int(__stdcall*)(void*)>(BinkWait)(video->vid))
-    {
+	{
 		if(IsG1) BinkPlayerPlayHandleEvents_G1(BinkPlayer);
 		else if(IsG2) BinkPlayerPlayHandleEvents_G2(BinkPlayer);
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -293,7 +293,7 @@ int __fastcall BinkPlayerPlayDoFrame(DWORD BinkPlayer)
 {
 	BinkVideo* video = *reinterpret_cast<BinkVideo**>(BinkPlayer + 0x30);
 	if(video->updateVolume)
-    {
+	{
 		float volume = video->globalVolume * video->videoVolume;
 		//if(NewBinkSetVolume) reinterpret_cast<void(__stdcall*)(void*, int, DWORD)>(BinkSetVolume)(video->vid, 0, static_cast<DWORD>(volume * 65536.f));
 		//else reinterpret_cast<void(__stdcall*)(void*, DWORD)>(BinkSetVolume)(video->vid, static_cast<DWORD>(volume * 65536.f));
@@ -311,7 +311,7 @@ int __fastcall BinkPlayerPlayFrame_G1(DWORD BinkPlayer)
 		BinkPlayerPlayHandleEvents_G1(BinkPlayer);
 		if(BinkPlayerIsPlaying(BinkPlayer))
 		{
-            BinkPlayerPlayDoFrame(BinkPlayer);
+			BinkPlayerPlayDoFrame(BinkPlayer);
 			{
 				DWORD vidWidth = *reinterpret_cast<DWORD*>(reinterpret_cast<DWORD>(video->vid) + 0x00);
 				DWORD vidHeight = *reinterpret_cast<DWORD*>(reinterpret_cast<DWORD>(video->vid) + 0x04);
@@ -360,10 +360,10 @@ int __fastcall BinkPlayerPlayFrame_G1(DWORD BinkPlayer)
 					video->scaleTU = 1.0f / ddsd.dwWidth;
 					video->scaleTV = 1.0f / ddsd.dwHeight;
 				}
-				
+
 				if(Direct3DDeviceCreated)
 				{
-					bool TempVideoBuffer_Lock(unsigned char*& data, INT & pitch, UINT width, UINT height);
+					bool TempVideoBuffer_Lock(unsigned char*& data, INT& pitch, UINT width, UINT height);
 					void TempVideoBuffer_Unlock(IDirectDrawSurface7 * tex);
 					void TempVideoBuffer_Discard();
 					if(video->texture->IsLost() == DDERR_SURFACELOST)
@@ -422,26 +422,26 @@ int __fastcall BinkPlayerPlayFrame_G1(DWORD BinkPlayer)
 
 				DWORD zrenderer = *reinterpret_cast<DWORD*>(0x8C5ED0);
 				int oldZWrite = reinterpret_cast<int(__thiscall*)(DWORD)>(*reinterpret_cast<DWORD*>
-                    (*reinterpret_cast<DWORD*>(zrenderer) + 0x68))(zrenderer);
+					(*reinterpret_cast<DWORD*>(zrenderer) + 0x68))(zrenderer);
 				reinterpret_cast<void(__thiscall*)(DWORD, int)>(*reinterpret_cast<DWORD*>
-                    (*reinterpret_cast<DWORD*>(zrenderer) + 0x6C))(zrenderer, 0); // No depth-writes
+					(*reinterpret_cast<DWORD*>(zrenderer) + 0x6C))(zrenderer, 0); // No depth-writes
 				int oldZCompare = reinterpret_cast<int(__thiscall*)(DWORD)>(*reinterpret_cast<DWORD*>
-                    (*reinterpret_cast<DWORD*>(zrenderer) + 0x70))(zrenderer);
+					(*reinterpret_cast<DWORD*>(zrenderer) + 0x70))(zrenderer);
 				int newZCompare = 0; // Compare always
 				reinterpret_cast<void(__thiscall*)(DWORD, int&)>(*reinterpret_cast<DWORD*>
-                    (*reinterpret_cast<DWORD*>(zrenderer) + 0x74))(zrenderer, newZCompare);
+					(*reinterpret_cast<DWORD*>(zrenderer) + 0x74))(zrenderer, newZCompare);
 				int oldAlphaFunc = reinterpret_cast<int(__thiscall*)(DWORD)>(*reinterpret_cast<DWORD*>
-                    (*reinterpret_cast<DWORD*>(zrenderer) + 0x8C))(zrenderer);
+					(*reinterpret_cast<DWORD*>(zrenderer) + 0x8C))(zrenderer);
 				int oldFilter = reinterpret_cast<int(__thiscall*)(DWORD)>(*reinterpret_cast<DWORD*>
-                    (*reinterpret_cast<DWORD*>(zrenderer) + 0x54))(zrenderer);
+					(*reinterpret_cast<DWORD*>(zrenderer) + 0x54))(zrenderer);
 				reinterpret_cast<void(__thiscall*)(DWORD, int)>(*reinterpret_cast<DWORD*>
-                    (*reinterpret_cast<DWORD*>(zrenderer) + 0x50))(zrenderer, video->scaleVideo ? 1 : 0); // Bilinear filter
+					(*reinterpret_cast<DWORD*>(zrenderer) + 0x50))(zrenderer, video->scaleVideo ? 1 : 0); // Bilinear filter
 				int oldFog = reinterpret_cast<int(__thiscall*)(DWORD)>(*reinterpret_cast<DWORD*>
-                    (*reinterpret_cast<DWORD*>(zrenderer) + 0x2C))(zrenderer);
+					(*reinterpret_cast<DWORD*>(zrenderer) + 0x2C))(zrenderer);
 				reinterpret_cast<void(__thiscall*)(DWORD, int)>(*reinterpret_cast<DWORD*>
-                    (*reinterpret_cast<DWORD*>(zrenderer) + 0x28))(zrenderer, 0); // No fog
+					(*reinterpret_cast<DWORD*>(zrenderer) + 0x28))(zrenderer, 0); // No fog
 
-                DWORD SetTextureStageState = *reinterpret_cast<DWORD*>(*reinterpret_cast<DWORD*>(zrenderer) + 0x148);
+				DWORD SetTextureStageState = *reinterpret_cast<DWORD*>(*reinterpret_cast<DWORD*>(zrenderer) + 0x148);
 				// Disable alpha blending
 				reinterpret_cast<void(__thiscall*)(DWORD, int, int)>(0x7185C0)(zrenderer, 26, 0);
 				reinterpret_cast<void(__thiscall*)(DWORD, int, int)>(0x7185C0)(zrenderer, 27, 0);
@@ -476,7 +476,7 @@ int __fastcall BinkPlayerPlayFrame_G1(DWORD BinkPlayer)
 				int gWidth = *reinterpret_cast<int*>(zrenderer + 0x984);
 				int gHeight = *reinterpret_cast<int*>(zrenderer + 0x988);
 				reinterpret_cast<void(__thiscall*)(DWORD, int, int, int, int)>(*reinterpret_cast<DWORD*>
-                    (*reinterpret_cast<DWORD*>(zrenderer) + 0x134))(zrenderer, 0, 0, gWidth, gHeight);
+					(*reinterpret_cast<DWORD*>(zrenderer) + 0x134))(zrenderer, 0, 0, gWidth, gHeight);
 
 				// Set video texture
 				reinterpret_cast<void(__thiscall*)(DWORD, int, LPDIRECTDRAWSURFACE7)>(0x718150)(zrenderer, 0, video->texture);
@@ -597,20 +597,20 @@ int __fastcall BinkPlayerPlayFrame_G1(DWORD BinkPlayer)
 				}
 
 				reinterpret_cast<void(__thiscall*)(DWORD, int)>(*reinterpret_cast<DWORD*>
-                    (*reinterpret_cast<DWORD*>(zrenderer) + 0x28))(zrenderer, oldFog);
+					(*reinterpret_cast<DWORD*>(zrenderer) + 0x28))(zrenderer, oldFog);
 				reinterpret_cast<void(__thiscall*)(DWORD, int)>(*reinterpret_cast<DWORD*>
-                    (*reinterpret_cast<DWORD*>(zrenderer) + 0x50))(zrenderer, oldFilter);
+					(*reinterpret_cast<DWORD*>(zrenderer) + 0x50))(zrenderer, oldFilter);
 				reinterpret_cast<void(__thiscall*)(DWORD, int&)>(*reinterpret_cast<DWORD*>
-                    (*reinterpret_cast<DWORD*>(zrenderer) + 0x88))(zrenderer, oldAlphaFunc);
+					(*reinterpret_cast<DWORD*>(zrenderer) + 0x88))(zrenderer, oldAlphaFunc);
 				reinterpret_cast<void(__thiscall*)(DWORD, int&)>(*reinterpret_cast<DWORD*>
-                    (*reinterpret_cast<DWORD*>(zrenderer) + 0x74))(zrenderer, oldZCompare);
+					(*reinterpret_cast<DWORD*>(zrenderer) + 0x74))(zrenderer, oldZCompare);
 				reinterpret_cast<void(__thiscall*)(DWORD, int)>(*reinterpret_cast<DWORD*>
-                    (*reinterpret_cast<DWORD*>(zrenderer) + 0x6C))(zrenderer, oldZWrite);
+					(*reinterpret_cast<DWORD*>(zrenderer) + 0x6C))(zrenderer, oldZWrite);
 				reinterpret_cast<void(__thiscall*)(DWORD, int, void*, void*)>(*reinterpret_cast<DWORD*>
-                    (*reinterpret_cast<DWORD*>(zrenderer) + 0xD8))(zrenderer, 0, nullptr, nullptr);
+					(*reinterpret_cast<DWORD*>(zrenderer) + 0xD8))(zrenderer, 0, nullptr, nullptr);
 			}
-            BinkPlayerPlayGotoNextFrame(BinkPlayer);
-            BinkPlayerPlayWaitNextFrame(BinkPlayer);
+			BinkPlayerPlayGotoNextFrame(BinkPlayer);
+			BinkPlayerPlayWaitNextFrame(BinkPlayer);
 		}
 	}
 	return 1;
@@ -624,7 +624,7 @@ int __fastcall BinkPlayerPlayFrame_G2(DWORD BinkPlayer)
 		BinkPlayerPlayHandleEvents_G2(BinkPlayer);
 		if(BinkPlayerIsPlaying(BinkPlayer))
 		{
-            BinkPlayerPlayDoFrame(BinkPlayer);
+			BinkPlayerPlayDoFrame(BinkPlayer);
 			{
 				DWORD vidWidth = *reinterpret_cast<DWORD*>(reinterpret_cast<DWORD>(video->vid) + 0x00);
 				DWORD vidHeight = *reinterpret_cast<DWORD*>(reinterpret_cast<DWORD>(video->vid) + 0x04);
@@ -676,7 +676,7 @@ int __fastcall BinkPlayerPlayFrame_G2(DWORD BinkPlayer)
 
 				if(Direct3DDeviceCreated)
 				{
-					bool TempVideoBuffer_Lock(unsigned char*& data, INT & pitch, UINT width, UINT height);
+					bool TempVideoBuffer_Lock(unsigned char*& data, INT& pitch, UINT width, UINT height);
 					void TempVideoBuffer_Unlock(IDirectDrawSurface7 * tex);
 					void TempVideoBuffer_Discard();
 					if(video->texture->IsLost() == DDERR_SURFACELOST)
@@ -735,26 +735,26 @@ int __fastcall BinkPlayerPlayFrame_G2(DWORD BinkPlayer)
 
 				DWORD zrenderer = *reinterpret_cast<DWORD*>(0x982F08);
 				int oldZWrite = reinterpret_cast<int(__thiscall*)(DWORD)>(*reinterpret_cast<DWORD*>
-                    (*reinterpret_cast<DWORD*>(zrenderer) + 0x80))(zrenderer);
+					(*reinterpret_cast<DWORD*>(zrenderer) + 0x80))(zrenderer);
 				reinterpret_cast<void(__thiscall*)(DWORD, int)>(*reinterpret_cast<DWORD*>
-                    (*reinterpret_cast<DWORD*>(zrenderer) + 0x84))(zrenderer, 0); // No depth-writes
+					(*reinterpret_cast<DWORD*>(zrenderer) + 0x84))(zrenderer, 0); // No depth-writes
 				int oldZCompare = reinterpret_cast<int(__thiscall*)(DWORD)>(*reinterpret_cast<DWORD*>
-                    (*reinterpret_cast<DWORD*>(zrenderer) + 0x90))(zrenderer);
+					(*reinterpret_cast<DWORD*>(zrenderer) + 0x90))(zrenderer);
 				int newZCompare = 0; // Compare always
 				reinterpret_cast<void(__thiscall*)(DWORD, int&)>(*reinterpret_cast<DWORD*>
-                    (*reinterpret_cast<DWORD*>(zrenderer) + 0x94))(zrenderer, newZCompare);
+					(*reinterpret_cast<DWORD*>(zrenderer) + 0x94))(zrenderer, newZCompare);
 				int oldAlphaFunc = reinterpret_cast<int(__thiscall*)(DWORD)>(*reinterpret_cast<DWORD*>
-                    (*reinterpret_cast<DWORD*>(zrenderer) + 0xAC))(zrenderer);
+					(*reinterpret_cast<DWORD*>(zrenderer) + 0xAC))(zrenderer);
 				int oldFilter = reinterpret_cast<int(__thiscall*)(DWORD)>(*reinterpret_cast<DWORD*>
-                    (*reinterpret_cast<DWORD*>(zrenderer) + 0x6C))(zrenderer);
+					(*reinterpret_cast<DWORD*>(zrenderer) + 0x6C))(zrenderer);
 				reinterpret_cast<void(__thiscall*)(DWORD, int)>(*reinterpret_cast<DWORD*>
-                    (*reinterpret_cast<DWORD*>(zrenderer) + 0x68))(zrenderer, video->scaleVideo ? 1 : 0); // Bilinear filter
+					(*reinterpret_cast<DWORD*>(zrenderer) + 0x68))(zrenderer, video->scaleVideo ? 1 : 0); // Bilinear filter
 				int oldFog = reinterpret_cast<int(__thiscall*)(DWORD)>(*reinterpret_cast<DWORD*>
-                    (*reinterpret_cast<DWORD*>(zrenderer) + 0x2C))(zrenderer);
+					(*reinterpret_cast<DWORD*>(zrenderer) + 0x2C))(zrenderer);
 				reinterpret_cast<void(__thiscall*)(DWORD, int)>(*reinterpret_cast<DWORD*>
-                    (*reinterpret_cast<DWORD*>(zrenderer) + 0x28))(zrenderer, 0); // No fog
+					(*reinterpret_cast<DWORD*>(zrenderer) + 0x28))(zrenderer, 0); // No fog
 
-                DWORD SetTextureStageState = *reinterpret_cast<DWORD*>(*reinterpret_cast<DWORD*>(zrenderer) + 0x17C);
+				DWORD SetTextureStageState = *reinterpret_cast<DWORD*>(*reinterpret_cast<DWORD*>(zrenderer) + 0x17C);
 				// Disable alpha blending
 				reinterpret_cast<void(__thiscall*)(DWORD, int, int)>(0x644EF0)(zrenderer, 26, 0);
 				reinterpret_cast<void(__thiscall*)(DWORD, int, int)>(0x644EF0)(zrenderer, 27, 0);
@@ -789,7 +789,7 @@ int __fastcall BinkPlayerPlayFrame_G2(DWORD BinkPlayer)
 				int gWidth = *reinterpret_cast<int*>(zrenderer + 0x98C);
 				int gHeight = *reinterpret_cast<int*>(zrenderer + 0x990);
 				reinterpret_cast<void(__thiscall*)(DWORD, int, int, int, int)>(*reinterpret_cast<DWORD*>
-                    (*reinterpret_cast<DWORD*>(zrenderer) + 0x168))(zrenderer, 0, 0, gWidth, gHeight);
+					(*reinterpret_cast<DWORD*>(zrenderer) + 0x168))(zrenderer, 0, 0, gWidth, gHeight);
 
 				// Set video texture
 				reinterpret_cast<void(__thiscall*)(DWORD, int, LPDIRECTDRAWSURFACE7)>(0x650500)(zrenderer, 0, video->texture);
@@ -910,20 +910,20 @@ int __fastcall BinkPlayerPlayFrame_G2(DWORD BinkPlayer)
 				}
 
 				reinterpret_cast<void(__thiscall*)(DWORD, int)>(*reinterpret_cast<DWORD*>
-                    (*reinterpret_cast<DWORD*>(zrenderer) + 0x28))(zrenderer, oldFog);
+					(*reinterpret_cast<DWORD*>(zrenderer) + 0x28))(zrenderer, oldFog);
 				reinterpret_cast<void(__thiscall*)(DWORD, int)>(*reinterpret_cast<DWORD*>
-                    (*reinterpret_cast<DWORD*>(zrenderer) + 0x68))(zrenderer, oldFilter);
+					(*reinterpret_cast<DWORD*>(zrenderer) + 0x68))(zrenderer, oldFilter);
 				reinterpret_cast<void(__thiscall*)(DWORD, int&)>(*reinterpret_cast<DWORD*>
-                    (*reinterpret_cast<DWORD*>(zrenderer) + 0xA8))(zrenderer, oldAlphaFunc);
+					(*reinterpret_cast<DWORD*>(zrenderer) + 0xA8))(zrenderer, oldAlphaFunc);
 				reinterpret_cast<void(__thiscall*)(DWORD, int&)>(*reinterpret_cast<DWORD*>
-                    (*reinterpret_cast<DWORD*>(zrenderer) + 0x94))(zrenderer, oldZCompare);
+					(*reinterpret_cast<DWORD*>(zrenderer) + 0x94))(zrenderer, oldZCompare);
 				reinterpret_cast<void(__thiscall*)(DWORD, int)>(*reinterpret_cast<DWORD*>
-                    (*reinterpret_cast<DWORD*>(zrenderer) + 0x84))(zrenderer, oldZWrite);
+					(*reinterpret_cast<DWORD*>(zrenderer) + 0x84))(zrenderer, oldZWrite);
 				reinterpret_cast<void(__thiscall*)(DWORD, int, void*, void*)>(*reinterpret_cast<DWORD*>
-                    (*reinterpret_cast<DWORD*>(zrenderer) + 0x10C))(zrenderer, 0, nullptr, nullptr);
+					(*reinterpret_cast<DWORD*>(zrenderer) + 0x10C))(zrenderer, 0, nullptr, nullptr);
 			}
-            BinkPlayerPlayGotoNextFrame(BinkPlayer);
-            BinkPlayerPlayWaitNextFrame(BinkPlayer);
+			BinkPlayerPlayGotoNextFrame(BinkPlayer);
+			BinkPlayerPlayWaitNextFrame(BinkPlayer);
 		}
 	}
 	return 1;
@@ -935,11 +935,11 @@ int __fastcall BinkPlayerPlayInit_G1(DWORD BinkPlayer, DWORD _EDX, int frame)
 	if(!video)
 		return 0;
 
-    if(!reinterpret_cast<int(__thiscall*)(DWORD, int)>(0x469600)(BinkPlayer, frame))
-    {
-        *reinterpret_cast<int*>(BinkPlayer + 0x20) = 0;
-        return 1;
-    }
+	if(!reinterpret_cast<int(__thiscall*)(DWORD, int)>(0x469600)(BinkPlayer, frame))
+	{
+		*reinterpret_cast<int*>(BinkPlayer + 0x20) = 0;
+		return 1;
+	}
 
 	if(frame > 0)
 		reinterpret_cast<void(__stdcall*)(void*, int, int)>(BinkGoto)(video->vid, frame, 0);
@@ -953,11 +953,11 @@ int __fastcall BinkPlayerPlayInit_G2(DWORD BinkPlayer, DWORD _EDX, int frame)
 	if(!video)
 		return 0;
 
-    if(!reinterpret_cast<int(__thiscall*)(DWORD, int)>(0x46E8E0)(BinkPlayer, frame))
-    {
-        *reinterpret_cast<int*>(BinkPlayer + 0x20) = 0;
-        return 1;
-    }
+	if(!reinterpret_cast<int(__thiscall*)(DWORD, int)>(0x46E8E0)(BinkPlayer, frame))
+	{
+		*reinterpret_cast<int*>(BinkPlayer + 0x20) = 0;
+		return 1;
+	}
 
 	if(frame > 0)
 		reinterpret_cast<void(__stdcall*)(void*, int, int)>(BinkGoto)(video->vid, frame, 0);
@@ -968,8 +968,8 @@ int __fastcall BinkPlayerPlayInit_G2(DWORD BinkPlayer, DWORD _EDX, int frame)
 int __fastcall BinkPlayerPlayDeinit_G1(DWORD BinkPlayer)
 {
 	DWORD BackView = *reinterpret_cast<DWORD*>(BinkPlayer + 0x5C);
-    if(BackView)
-        reinterpret_cast<void(__thiscall*)(DWORD, int)>(*reinterpret_cast<DWORD*>(*reinterpret_cast<DWORD*>(BackView) + 0x20))(BackView, 1);
+	if(BackView)
+		reinterpret_cast<void(__thiscall*)(DWORD, int)>(*reinterpret_cast<DWORD*>(*reinterpret_cast<DWORD*>(BackView) + 0x20))(BackView, 1);
 
 	return reinterpret_cast<int(__thiscall*)(DWORD)>(0x469650)(BinkPlayer);
 }
@@ -977,15 +977,15 @@ int __fastcall BinkPlayerPlayDeinit_G1(DWORD BinkPlayer)
 int __fastcall BinkPlayerPlayDeinit_G2(DWORD BinkPlayer)
 {
 	DWORD BackView = *reinterpret_cast<DWORD*>(BinkPlayer + 0x5C);
-    if(BackView)
-        reinterpret_cast<void(__thiscall*)(DWORD, int)>(*reinterpret_cast<DWORD*>(*reinterpret_cast<DWORD*>(BackView) + 0x24))(BackView, 1);
+	if(BackView)
+		reinterpret_cast<void(__thiscall*)(DWORD, int)>(*reinterpret_cast<DWORD*>(*reinterpret_cast<DWORD*>(BackView) + 0x24))(BackView, 1);
 
 	return reinterpret_cast<int(__thiscall*)(DWORD)>(0x46E930)(BinkPlayer);
 }
 
 int __fastcall BinkPlayerOpenVideo_G1(DWORD BinkPlayer, DWORD _EDX, zSTRING_G1 videoName)
 {
-    DWORD zCOption = *reinterpret_cast<DWORD*>(0x869694);
+	DWORD zCOption = *reinterpret_cast<DWORD*>(0x869694);
 	zSTRING_G1& directoryRoot = reinterpret_cast<zSTRING_G1&(__thiscall*)(DWORD, int)>(0x45FC00)(zCOption, 23);
 	std::string pathToVideo = std::string(directoryRoot.ToChar(), directoryRoot.Length()) +
 		std::string(videoName.ToChar(), videoName.Length());
@@ -993,7 +993,7 @@ int __fastcall BinkPlayerOpenVideo_G1(DWORD BinkPlayer, DWORD _EDX, zSTRING_G1 v
 		pathToVideo.append(".BIK");
 
 	reinterpret_cast<void(__stdcall*)(DWORD, DWORD)>(BinkSetSoundSystem)(BinkOpenWaveOut, 0);
-	void* videoHandle = reinterpret_cast<void*(__stdcall*)(const char*, DWORD)>(BinkOpen)(pathToVideo.c_str(), 0);
+	void* videoHandle = reinterpret_cast<void* (__stdcall*)(const char*, DWORD)>(BinkOpen)(pathToVideo.c_str(), 0);
 	if(videoHandle)
 	{
 		reinterpret_cast<void(__stdcall*)(void*, int)>(BinkSetSoundOnOff)(videoHandle, 1);
@@ -1005,8 +1005,8 @@ int __fastcall BinkPlayerOpenVideo_G1(DWORD BinkPlayer, DWORD _EDX, zSTRING_G1 v
 	BinkVideo* video = *reinterpret_cast<BinkVideo**>(BinkPlayer + 0x30);
 	if(video)
 	{
-        video->globalVolume = BinkPlayerReadGlobalVolume(zCOption);
-        video->scaleVideo = BinkPlayerReadScaleVideos(zCOption);
+		video->globalVolume = BinkPlayerReadGlobalVolume(zCOption);
+		video->scaleVideo = BinkPlayerReadScaleVideos(zCOption);
 
 		// We are passing directly zSTRING so the memory will be deleted inside this function
 		reinterpret_cast<int(__thiscall*)(DWORD, zSTRING_G1)>(0x469280)(BinkPlayer, videoName);
@@ -1019,7 +1019,7 @@ int __fastcall BinkPlayerOpenVideo_G1(DWORD BinkPlayer, DWORD _EDX, zSTRING_G1 v
 
 int __fastcall BinkPlayerOpenVideo_G2(DWORD BinkPlayer, DWORD _EDX, zSTRING_G2 videoName)
 {
-    DWORD zCOption = *reinterpret_cast<DWORD*>(0x8CD988);
+	DWORD zCOption = *reinterpret_cast<DWORD*>(0x8CD988);
 	zSTRING_G2& directoryRoot = reinterpret_cast<zSTRING_G2&(__thiscall*)(DWORD, int)>(0x465260)(zCOption, 24);
 	std::string pathToVideo = std::string(directoryRoot.ToChar(), directoryRoot.Length()) +
 		std::string(videoName.ToChar(), videoName.Length());
@@ -1027,7 +1027,7 @@ int __fastcall BinkPlayerOpenVideo_G2(DWORD BinkPlayer, DWORD _EDX, zSTRING_G2 v
 		pathToVideo.append(".BIK");
 
 	reinterpret_cast<void(__stdcall*)(DWORD, DWORD)>(BinkSetSoundSystem)(BinkOpenWaveOut, 0);
-	void* videoHandle = reinterpret_cast<void*(__stdcall*)(const char*, DWORD)>(BinkOpen)(pathToVideo.c_str(), 0);
+	void* videoHandle = reinterpret_cast<void* (__stdcall*)(const char*, DWORD)>(BinkOpen)(pathToVideo.c_str(), 0);
 	if(videoHandle)
 	{
 		reinterpret_cast<void(__stdcall*)(void*, int)>(BinkSetSoundOnOff)(videoHandle, 1);
@@ -1039,8 +1039,8 @@ int __fastcall BinkPlayerOpenVideo_G2(DWORD BinkPlayer, DWORD _EDX, zSTRING_G2 v
 	BinkVideo* video = *reinterpret_cast<BinkVideo**>(BinkPlayer + 0x30);
 	if(video)
 	{
-        video->globalVolume = BinkPlayerReadGlobalVolume(zCOption);
-        video->scaleVideo = BinkPlayerReadScaleVideos(zCOption);
+		video->globalVolume = BinkPlayerReadGlobalVolume(zCOption);
+		video->scaleVideo = BinkPlayerReadScaleVideos(zCOption);
 
 		// We are passing directly zSTRING so the memory will be deleted inside this function
 		reinterpret_cast<int(__thiscall*)(DWORD, zSTRING_G2)>(0x46E560)(BinkPlayer, videoName);
@@ -1091,7 +1091,7 @@ int __fastcall BinkPlayerCloseVideo_G2(DWORD BinkPlayer)
 
 void RegisterBinkPlayerHooks()
 {
-    HMODULE BinkWDLL;
+	HMODULE BinkWDLL;
 	if((BinkWDLL = LoadLibraryA("Bink2W32.dll")) != nullptr || (BinkWDLL = GetModuleHandleA("BinkW32.dll")) != nullptr)
 	{
 		NewBinkSetVolume = true;
