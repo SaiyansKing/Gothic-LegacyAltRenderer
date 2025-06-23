@@ -46,7 +46,7 @@ constexpr int option_vsync = 1002;
 constexpr int option_launch = 1003;
 constexpr int option_skip = 1004;
 
-std::atomic<bool> enable_radialFog_G1 = true;
+std::atomic<bool> enable_radialFog_G1 = false;
 std::atomic<bool> selected_lighthack = false;
 std::atomic<bool> selected_rdepth = true;
 std::atomic<bool> selected_vsync = false;
