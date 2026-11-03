@@ -650,6 +650,46 @@ void __fastcall zCRenderer_DrawPolySimple_G2(DWORD zCRenderer, DWORD _EDX, DWORD
 	reinterpret_cast<void(__thiscall*)(DWORD, DWORD, zTRndSimpleVertex*, int)>(*reinterpret_cast<DWORD*>(*reinterpret_cast<DWORD*>(zCRenderer) + 0x24))(zCRenderer, texture, vertices, numVertices);
 }
 
+__declspec(naked) void __fastcall Original_zCLightMap_Destructor_G1(DWORD lightmap)
+{
+	_asm
+	{
+		push - 1
+		push 0x7AE248
+		push 0x5CDE37
+		ret
+	}
+}
+
+void __fastcall zCLightMap_Destructor_G1(DWORD lightmap)
+{
+	DWORD texture = *reinterpret_cast<DWORD*>(lightmap + 0x48);
+	if (texture)
+		*reinterpret_cast<DWORD*>(texture + 0x4C) &= 0xFB;
+
+	Original_zCLightMap_Destructor_G1(lightmap);
+}
+
+__declspec(naked) void __fastcall Original_zCLightMap_Destructor_G2(DWORD lightmap)
+{
+    _asm
+    {
+        push -1
+        push 0x809A68
+        push 0x5F8F67
+        ret
+    }
+}
+
+void __fastcall zCLightMap_Destructor_G2(DWORD lightmap)
+{
+    DWORD texture = *reinterpret_cast<DWORD*>(lightmap + 0x48);
+    if(texture)
+        *reinterpret_cast<DWORD*>(texture + 0x4C) &= 0xFB;
+
+	Original_zCLightMap_Destructor_G2(lightmap);
+}
+
 __declspec(noinline) bool UTILS_IsWindowsVersionOrGreater(WORD wMajorVersion, WORD wMinorVersion, WORD wServicePackMajor)
 {
 	OSVERSIONINFOEXW VersionInfo = {0};
@@ -1040,6 +1080,9 @@ BOOL WINAPI DllMain(HINSTANCE hInst, DWORD reason, LPVOID)
 			// Disable WM_PAINT
 			HookJMP(0x4F545D, 0x4F57F4);
 
+			// Fix lightmap memory leak
+			HookJMP(0x5CDE30, reinterpret_cast<DWORD>(&zCLightMap_Destructor_G1));
+
 			// Initialize renderer
 			HookCall(0x4F3E22, reinterpret_cast<DWORD>(&InitCommonControls_G1));
 
@@ -1092,6 +1135,9 @@ BOOL WINAPI DllMain(HINSTANCE hInst, DWORD reason, LPVOID)
 
 			// Disable WM_PAINT
 			OverWriteByte(0x50394D, 0xEB);
+
+			// Fix lightmap memory leak
+			HookJMP(0x5F8F60, reinterpret_cast<DWORD>(&zCLightMap_Destructor_G2));
 
 			// Show correct savegame thumbnail
 			WriteStack(0x437157, "\x8B\xEE\xEB\x21");
