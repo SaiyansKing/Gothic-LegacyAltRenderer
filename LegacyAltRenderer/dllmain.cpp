@@ -57,6 +57,9 @@ std::atomic<int> selected_msaa = 0;
 bool IsG1 = false;
 bool IsG2 = false;
 
+float g_horizonZ[8194];
+float g_horizonY[8194];
+
 static void LoadCFG(HWND hWnd, HWND rendererBox, HWND msaaBox)
 {
 	char executablePath[MAX_PATH];
@@ -1083,6 +1086,28 @@ BOOL WINAPI DllMain(HINSTANCE hInst, DWORD reason, LPVOID)
 			// Fix lightmap memory leak
 			HookJMP(0x5CDE30, reinterpret_cast<DWORD>(&zCLightMap_Destructor_G1));
 
+			// Fix horizon calculations for high resolutions
+			OverWrite(0x51934A, reinterpret_cast<DWORD>(g_horizonZ));
+			OverWrite(0x51BD1E, reinterpret_cast<DWORD>(g_horizonZ));
+			OverWrite(0x51BD30, reinterpret_cast<DWORD>(g_horizonZ));
+			OverWrite(0x51BD47, reinterpret_cast<DWORD>(g_horizonZ));
+			OverWrite(0x51D73D, reinterpret_cast<DWORD>(g_horizonZ));
+			OverWrite(0x51D77A, reinterpret_cast<DWORD>(g_horizonZ));
+			OverWrite(0x51D7A1, reinterpret_cast<DWORD>(g_horizonZ));
+			OverWrite(0x51DE2A, reinterpret_cast<DWORD>(g_horizonZ));
+			OverWrite(0x51828F, reinterpret_cast<DWORD>(g_horizonZ));
+			OverWrite(0x51831F, reinterpret_cast<DWORD>(g_horizonZ));
+			OverWrite(0x51829B, reinterpret_cast<DWORD>(g_horizonY));
+			OverWrite(0x51830A, reinterpret_cast<DWORD>(g_horizonY));
+			OverWrite(0x518318, reinterpret_cast<DWORD>(g_horizonY));
+			OverWrite(0x519331, reinterpret_cast<DWORD>(g_horizonY));
+			OverWrite(0x51933F, reinterpret_cast<DWORD>(g_horizonY));
+			OverWrite(0x51BD5F, reinterpret_cast<DWORD>(g_horizonY));
+			OverWrite(0x51D7C7, reinterpret_cast<DWORD>(g_horizonY));
+			OverWrite(0x51DE25, reinterpret_cast<DWORD>(g_horizonY));
+			OverWrite(0x51DE37, reinterpret_cast<DWORD>(g_horizonY));
+			OverWrite(0x51DE3C, reinterpret_cast<DWORD>(&g_horizonY[1]));
+
 			// Initialize renderer
 			HookCall(0x4F3E22, reinterpret_cast<DWORD>(&InitCommonControls_G1));
 
@@ -1138,6 +1163,28 @@ BOOL WINAPI DllMain(HINSTANCE hInst, DWORD reason, LPVOID)
 
 			// Fix lightmap memory leak
 			HookJMP(0x5F8F60, reinterpret_cast<DWORD>(&zCLightMap_Destructor_G2));
+
+			// Fix horizon calculations for high resolutions
+			OverWrite(0x5291C0, reinterpret_cast<DWORD>(g_horizonZ));
+			OverWrite(0x529257, reinterpret_cast<DWORD>(g_horizonZ));
+			OverWrite(0x52A3EA, reinterpret_cast<DWORD>(g_horizonZ));
+			OverWrite(0x52E689, reinterpret_cast<DWORD>(g_horizonZ));
+			OverWrite(0x52E69E, reinterpret_cast<DWORD>(g_horizonZ));
+			OverWrite(0x52E6B5, reinterpret_cast<DWORD>(g_horizonZ));
+			OverWrite(0x52FF8F, reinterpret_cast<DWORD>(g_horizonZ));
+			OverWrite(0x52FFB4, reinterpret_cast<DWORD>(g_horizonZ));
+			OverWrite(0x52FFDB, reinterpret_cast<DWORD>(g_horizonZ));
+			OverWrite(0x530790, reinterpret_cast<DWORD>(g_horizonZ));
+			OverWrite(0x5291CC, reinterpret_cast<DWORD>(g_horizonY));
+			OverWrite(0x529242, reinterpret_cast<DWORD>(g_horizonY));
+			OverWrite(0x529250, reinterpret_cast<DWORD>(g_horizonY));
+			OverWrite(0x52A3D1, reinterpret_cast<DWORD>(g_horizonY));
+			OverWrite(0x52A3DF, reinterpret_cast<DWORD>(g_horizonY));
+			OverWrite(0x52E6CD, reinterpret_cast<DWORD>(g_horizonY));
+			OverWrite(0x530007, reinterpret_cast<DWORD>(g_horizonY));
+			OverWrite(0x53078B, reinterpret_cast<DWORD>(g_horizonY));
+			OverWrite(0x53079D, reinterpret_cast<DWORD>(g_horizonY));
+			OverWrite(0x5307A2, reinterpret_cast<DWORD>(&g_horizonY[1]));
 
 			// Show correct savegame thumbnail
 			WriteStack(0x437157, "\x8B\xEE\xEB\x21");
